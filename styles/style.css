@@ -4,7 +4,7 @@ body {
     padding: 0;
     height: 100%;
     font-family: 'Segoe UI', sans-serif;
-    background: url('https://source.unsplash.com/random/1920x1080/?landscape') no-repeat center center fixed;
+    background: url('https://www.uaena.io/assets/images/background.JPG') no-repeat center center fixed;
     background-size: cover;
     display: flex;
     flex-direction: column;
