@@ -94,6 +94,7 @@ body {
     background: rgba(255, 255, 255, 0.6);
     overflow: hidden;
     width: 100%;
+    flex-wrap: wrap;
 }
 
 .search-container input[type="text"] {
@@ -107,6 +108,7 @@ body {
     outline: none;
     padding-left: 20px;
     padding-right: 5px;
+    min-width: 0;
 }
 
 
@@ -145,6 +147,11 @@ body {
     transition-property: all;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
+    flex-shrink: 0;
+}
+
+#send-button {
+    flex-shrink: 0;
 }
 
 #toggle-ai.active {
