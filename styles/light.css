@@ -19,7 +19,7 @@ body {
     height: 120vh;
     background: url('../assets/images/background.JPG') no-repeat center center fixed;
     background-size: cover;
-    filter: blur(40px);
+    filter: blur(20px);
     z-index: -1;
 }
 
@@ -60,12 +60,18 @@ body {
     top: 30%;
     left: 50%;
     transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* ✅ Ensures children are centered */
     text-align: center;
     z-index: 2;
 }
 
 .clock {
-    font-size: 7rem;
+    /* responsisve font size */
+    font-size: clamp(4rem, 10vw, 7rem);
     font-weight: 900;
     color: rgba(255, 255, 255, 1);
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
@@ -73,10 +79,11 @@ body {
 }
 
 .search-container {
+    width: 50vw;
+    min-width: 200px;
+    max-width: 600px;
     display: flex;
-    align-items: center;
-    padding: 15px 30px;
-    width: 40vw;
+    justify-content: center;
 }
 
 .search-container input[type="text"] {
@@ -92,6 +99,8 @@ body {
     height: 24px;
     outline: none;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 100%;
 }
 
 .search-container input[type="text"]::placeholder {
