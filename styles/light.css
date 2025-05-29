@@ -152,7 +152,36 @@ body {
 }
 
 #send-button {
+    margin-left: 10px;
+    display: flex;
+    padding: 10px;
+    border: none;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 13px;
+    cursor: pointer;
     flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    transition-property: all;
+    transition-duration: 0.3s;
+    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79)
+}
+
+#send-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#send-button:active {
+    transform: translateY(0) scale(0.95);
+    box-shadow: 0 0 7px rgba(0, 0, 0, 0.5);
+}
+
+#send-button svg {
+    width: 24px;
+    height: 24px;
+    stroke: #000;
 }
 
 #toggle-ai.active {
@@ -169,6 +198,6 @@ body {
     justify-content: center;
     margin-top: 20px;
     width: 50vw;
-    min-width: 300px;
+    min-width: 350px;
     max-width: 600px;
 }
