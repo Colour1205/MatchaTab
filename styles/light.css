@@ -80,7 +80,7 @@ body {
 
 .search-container {
     width: 50vw;
-    min-width: 200px;
+    min-width: 300px;
     max-width: 600px;
     display: flex;
     justify-content: center;
