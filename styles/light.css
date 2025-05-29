@@ -33,6 +33,12 @@ body {
     z-index: -1;
 }
 
+@supports not (height: 100dvh) {
+    .background-wrapper {
+        height: 100vh;
+    }
+}
+
 /* add vignette effect to background*/
 .background-wrapper::after {
     content: "";
