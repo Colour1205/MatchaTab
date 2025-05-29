@@ -79,8 +79,9 @@ body {
 }
 
 .search-container {
+    margin-top: 20px;
     width: 50vw;
-    min-width: 300px;
+    min-width: 290px;
     max-width: 600px;
     display: flex;
     justify-content: center;
