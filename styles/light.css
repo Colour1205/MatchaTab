@@ -95,6 +95,7 @@ body {
     overflow: hidden;
     width: 100%;
     flex-wrap: wrap;
+    height: 60px;
 }
 
 .search-container input[type="text"] {
@@ -137,7 +138,7 @@ body {
     padding: 10px;
     padding-top: 7px;
     padding-bottom: 7px;
-    margin-right: 12px;
+    margin-right: 10px;
     border: none;
     background: rgba(255, 255, 255, 0.6);
     border-radius: 13px;
@@ -168,6 +169,6 @@ body {
     justify-content: center;
     margin-top: 20px;
     width: 50vw;
-    min-width: 290px;
+    min-width: 300px;
     max-width: 600px;
 }
