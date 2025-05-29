@@ -5,14 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>uaena</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="styles/light.css">
     <link rel="icon" href="/assets/images/favicon.ico" type="image/x-icon">
 </head>
 
 <body>
-    <div class="glass clock" id="clock"></div>
-    <div class="glass search-container">
-        <input type="text" placeholder="Search...">
+    <div class="background-wrapper">
+        <div class="background-overlay"></div>
+        <div class="background"></div>
+    </div>
+
+    <div class="information-wrapper">
+        <div class="clock" id="clock"></div>
+        <div class="glass search-container">
+            <input type="text" id="search-input" placeholder="Hi, where to?">
+        </div>
     </div>
 
     <script src="scripts/main.js"></script>
