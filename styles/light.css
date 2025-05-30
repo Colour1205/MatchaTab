@@ -221,13 +221,14 @@ body {
     justify-content: center;
     align-items: center;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    transition-property: all;
+    transition-property: transform, box-shadow;
     transition-duration: 0.3s;
-    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79)
+    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
 }
 
 #send-button:hover {
     transform: scale(1.05);
+    background: #dfddff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -366,10 +367,6 @@ body {
 }
 
 .quick-link-context {
-    position: absolute;
-    z-index: 1001;
-    top: 45px;
-    left: 0;
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(20px);
     border-radius: 17px;
@@ -377,6 +374,7 @@ body {
     display: none;
     flex-direction: column;
     padding: 0;
+    overflow: hidden;
 }
 
 .quick-link-context.show {
@@ -391,7 +389,6 @@ body {
     color: #333;
     cursor: pointer;
     text-align: left;
-    border-radius: 17px;
     transition: background 0.15s;
     width: 100%;
     box-sizing: border-box;
@@ -399,5 +396,5 @@ body {
 }
 
 .quick-link-context button:hover {
-    background: #eae9f8;
+    background: #dfddff;
 }

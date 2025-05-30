@@ -178,8 +178,7 @@ function createQuickLinkElement(link, idx) {
     // Context menu (right-click)
     div.addEventListener('contextmenu', function (e) {
         e.preventDefault();
-        closeAllContexts();
-        showQuickLinkContextMenu(div, idx);
+        showQuickLinkContextMenu(idx, e, false);
     });
 
     return div;
@@ -191,37 +190,61 @@ function closeAllContexts() {
 }
 
 // Context menu logic
-function showQuickLinkContextMenu(linkElem, idx) {
-    linkElem.classList.add('show-context');
-    let menu = document.createElement('div');
+function showQuickLinkContextMenu(idx, e, isEmptyArea = false) {
+    closeAllContexts(); // Remove any old menus
+
+    const menu = document.createElement('div');
     menu.className = 'quick-link-context show';
+    menu.style.position = 'fixed';
+    menu.style.zIndex = '9999';
+    menu.style.top = `${e.clientY}px`;
+    menu.style.left = `${e.clientX}px`;
 
-    let addBtn = document.createElement('button');
-    addBtn.textContent = 'Add Quick Link';
-    addBtn.onclick = (e) => {
-        e.stopPropagation();
-        closeAllContexts();
-        addQuickLinkPrompt();
-    };
-    menu.appendChild(addBtn);
+    // Add appropriate buttons
+    if (isEmptyArea) {
+        // Only "Add Quick Link" when right-clicking empty area
+        const addBtn = document.createElement('button');
+        addBtn.textContent = 'Add Quick Link';
+        addBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            closeAllContexts();
+            addQuickLinkPrompt();
+        };
+        menu.appendChild(addBtn);
+    } else {
+        // "Add Quick Link" + "Remove This Link" for quick link item
+        const addBtn = document.createElement('button');
+        addBtn.textContent = 'Add Quick Link';
+        addBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            closeAllContexts();
+            addQuickLinkPrompt();
+        };
+        menu.appendChild(addBtn);
 
-    let removeBtn = document.createElement('button');
-    removeBtn.textContent = 'Remove This Link';
-    removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        let links = getStoredQuickLinks();
-        links.splice(idx, 1);
-        storeQuickLinks(links);
-        closeAllContexts();
-        renderQuickLinks();
-    };
-    menu.appendChild(removeBtn);
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove This Link';
+        removeBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            let links = getStoredQuickLinks();
+            links.splice(idx, 1);
+            storeQuickLinks(links);
+            closeAllContexts();
+            renderQuickLinks();
+        };
+        menu.appendChild(removeBtn);
+    }
 
-    // Position and display
-    linkElem.appendChild(menu);
+    document.body.appendChild(menu);
 
-    // Click outside to close
-    document.addEventListener('click', closeAllContexts, { once: true });
+    setTimeout(() => {
+        document.addEventListener('click', closeAllContexts, { once: true });
+    }, 0);
+}
+
+// Close all context menus
+function closeAllContexts() {
+    document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
 }
 
 // Add quick link flow
