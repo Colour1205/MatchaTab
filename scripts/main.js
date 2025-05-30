@@ -99,7 +99,7 @@ const DEFAULT_QUICK_LINKS = [
     {
         name: "uaena.io",
         url: "https://uaena.io",
-        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=uaena.io"
+        faviconUrl: "/assets/images/favicon.ico"
     }
 ];
 
@@ -246,13 +246,35 @@ async function addQuickLinkPrompt() {
 
 // Try to get favicon, else null
 async function fetchFavicon(url) {
-    try {
-        let { hostname } = new URL(url);
-        // Use Google's S2 favicon service for higher resolution icons
-        return `https://www.google.com/s2/favicons?sz=64&domain_url=${hostname}`;
-    } catch {
-        return null;
+    let { origin, hostname } = new URL(url);
+    const candidates = [
+        `https://www.google.com/s2/favicons?sz=128&domain_url=${hostname}`,
+        `${origin}/favicon.ico`,
+        `${origin}/favicon.png`,
+        `${origin}/assets/favicon.ico`,
+        `${origin}/assets/favicon.png`,
+        `${origin}/assets/images/favicon.ico`,
+        `${origin}/assets/images/favicon.png`,
+        `${origin}/static/favicon.ico`,
+        `${origin}/static/favicon.png`,
+        `${origin}/images/favicon.ico`,
+        `${origin}/images/favicon.png`,
+        `${origin}/icons/favicon.ico`,
+        `${origin}/icons/favicon.png`
+    ];
+    function imageExists(src) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve(src);
+            img.onerror = () => resolve(null);
+            img.src = src + '?v=' + Date.now();
+        });
     }
+    for (let candidate of candidates) {
+        let result = await imageExists(candidate);
+        if (result) return result;
+    }
+    return null;
 }
 
 function capitalize(s) {
