@@ -124,7 +124,13 @@ body {
 
 @media (max-height: 345px) {
     .searchbar-container {
-        display: none!important;
+        display: none !important;
+    }
+}
+
+@media (max-height: 262px) {
+    #quick-links-section {
+        height: 100px !important
     }
 }
 
