@@ -65,15 +65,60 @@ function sendAction() {
 const quickLinksSection = document.getElementById('quick-links-section');
 const QUICK_LINKS_KEY = 'userQuickLinksV1';
 
+const DEFAULT_QUICK_LINKS = [
+    {
+        name: "YouTube",
+        url: "https://www.youtube.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=youtube.com"
+    },
+    {
+        name: "Instagram",
+        url: "https://www.instagram.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=instagram.com"
+    },
+    {
+        name: "Reddit",
+        url: "https://www.reddit.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=reddit.com"
+    },
+    {
+        name: "Discord",
+        url: "https://discord.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=discord.com"
+    },
+    {
+        name: "Amazon",
+        url: "https://www.amazon.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=amazon.com"
+    },
+    {
+        name: "Bilibili",
+        url: "https://www.bilibili.com",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=bilibili.com"
+    },
+    {
+        name: "uaena.io",
+        url: "https://uaena.io",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=uaena.io"
+    }
+];
+
 function getStoredQuickLinks() {
     try {
-        return JSON.parse(localStorage.getItem(QUICK_LINKS_KEY)) || [];
+        const stored = JSON.parse(localStorage.getItem(QUICK_LINKS_KEY));
+        if (stored && Array.isArray(stored)) return stored;
+        return null;
     } catch {
-        return [];
+        return null;
     }
 }
 function storeQuickLinks(links) {
     localStorage.setItem(QUICK_LINKS_KEY, JSON.stringify(links));
+}
+
+// Set defaults only if first time (or storage is empty/corrupted)
+if (!getStoredQuickLinks()) {
+    storeQuickLinks(DEFAULT_QUICK_LINKS);
 }
 
 function renderQuickLinks() {
@@ -109,7 +154,7 @@ function createQuickLinkElement(link, idx) {
         img.alt = link.name[0];
         img.style.width = '100%';
         img.style.height = '100%';
-        img.style.borderRadius = '50%';
+        img.style.borderRadius = '33%';
         icon.appendChild(img);
     } else {
         icon.textContent = link.name[0].toUpperCase();
@@ -201,44 +246,14 @@ async function addQuickLinkPrompt() {
 
 // Try to get favicon, else null
 async function fetchFavicon(url) {
-    let { origin, hostname } = new URL(url);
-
-    // Try Google S2 service first
-    const candidates = [
-        `https://www.google.com/s2/favicons?sz=128&domain_url=${hostname}`,
-
-        // Root and common static asset locations
-        `${origin}/favicon.ico`,
-        `${origin}/favicon.png`,
-        `${origin}/assets/favicon.ico`,
-        `${origin}/assets/favicon.png`,
-        `${origin}/assets/images/favicon.ico`,
-        `${origin}/assets/images/favicon.png`,
-        `${origin}/static/favicon.ico`,
-        `${origin}/static/favicon.png`,
-        `${origin}/images/favicon.ico`,
-        `${origin}/images/favicon.png`,
-        `${origin}/icons/favicon.ico`,
-        `${origin}/icons/favicon.png`
-    ];
-
-    // Helper to check if image loads
-    function imageExists(src) {
-        return new Promise(resolve => {
-            const img = new Image();
-            img.onload = () => resolve(src);
-            img.onerror = () => resolve(null);
-            img.src = src + '?v=' + Date.now(); // prevent cache issues
-        });
+    try {
+        let { hostname } = new URL(url);
+        // Use Google's S2 favicon service for higher resolution icons
+        return `https://www.google.com/s2/favicons?sz=64&domain_url=${hostname}`;
+    } catch {
+        return null;
     }
-
-    for (let candidate of candidates) {
-        let result = await imageExists(candidate);
-        if (result) return result;
-    }
-    return null;
 }
-
 
 function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
