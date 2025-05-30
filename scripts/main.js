@@ -59,3 +59,231 @@ function sendAction() {
         }
     }
 }
+
+// --- QUICK LINKS LOGIC ---
+
+const quickLinksSection = document.getElementById('quick-links-section');
+const QUICK_LINKS_KEY = 'userQuickLinksV1';
+
+function getStoredQuickLinks() {
+    try {
+        return JSON.parse(localStorage.getItem(QUICK_LINKS_KEY)) || [];
+    } catch {
+        return [];
+    }
+}
+function storeQuickLinks(links) {
+    localStorage.setItem(QUICK_LINKS_KEY, JSON.stringify(links));
+}
+
+function renderQuickLinks() {
+    let links = getStoredQuickLinks();
+    // Ensure minimum 8 empty slots for grid, if <4 cols, add invisible placeholder
+    let minVisible = Math.max(links.length, 8);
+    quickLinksSection.innerHTML = '';
+
+    links.forEach((link, idx) => {
+        quickLinksSection.appendChild(createQuickLinkElement(link, idx));
+    });
+
+    // For grid min 4 columns x 2 rows = 8, pad with empty placeholders (hidden but preserve grid structure)
+    for (let i = links.length; i < minVisible; i++) {
+        let div = document.createElement('div');
+        div.style.visibility = 'hidden';
+        div.style.height = '58px';
+        quickLinksSection.appendChild(div);
+    }
+}
+
+function createQuickLinkElement(link, idx) {
+    let div = document.createElement('div');
+    div.className = 'quick-link';
+    div.tabIndex = 0;
+
+    // ICON
+    let icon = document.createElement('div');
+    icon.className = 'quick-link-icon';
+    if (link.faviconUrl) {
+        let img = document.createElement('img');
+        img.src = link.faviconUrl;
+        img.alt = link.name[0];
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = '50%';
+        icon.appendChild(img);
+    } else {
+        icon.textContent = link.name[0].toUpperCase();
+    }
+
+    // LABEL
+    let label = document.createElement('div');
+    label.className = 'quick-link-label';
+    label.textContent = link.name;
+
+    div.appendChild(icon);
+    div.appendChild(label);
+
+    // Go to link on click
+    div.addEventListener('click', e => {
+        if (!div.classList.contains('show-context')) {
+            window.open(link.url, '_blank');
+        }
+    });
+
+    // Context menu (right-click)
+    div.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        closeAllContexts();
+        showQuickLinkContextMenu(div, idx);
+    });
+
+    return div;
+}
+
+function closeAllContexts() {
+    document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
+    document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
+}
+
+// Context menu logic
+function showQuickLinkContextMenu(linkElem, idx) {
+    linkElem.classList.add('show-context');
+    let menu = document.createElement('div');
+    menu.className = 'quick-link-context show';
+
+    let addBtn = document.createElement('button');
+    addBtn.textContent = 'Add Quick Link';
+    addBtn.onclick = (e) => {
+        e.stopPropagation();
+        closeAllContexts();
+        addQuickLinkPrompt();
+    };
+    menu.appendChild(addBtn);
+
+    let removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove This Link';
+    removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        let links = getStoredQuickLinks();
+        links.splice(idx, 1);
+        storeQuickLinks(links);
+        closeAllContexts();
+        renderQuickLinks();
+    };
+    menu.appendChild(removeBtn);
+
+    // Position and display
+    linkElem.appendChild(menu);
+
+    // Click outside to close
+    document.addEventListener('click', closeAllContexts, { once: true });
+}
+
+// Add quick link flow
+async function addQuickLinkPrompt() {
+    let url = prompt('Enter the URL for the quick link:');
+    if (!url) return;
+    url = url.trim();
+    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+    try {
+        let name = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
+        // Try to fetch favicon
+        let faviconUrl = await fetchFavicon(url);
+        let newLink = { url, name: capitalize(name), faviconUrl };
+        let links = getStoredQuickLinks();
+        links.push(newLink);
+        storeQuickLinks(links);
+        renderQuickLinks();
+    } catch {
+        alert('Invalid URL.');
+    }
+}
+
+// Try to get favicon, else null
+async function fetchFavicon(url) {
+    let { origin, hostname } = new URL(url);
+
+    // Try Google S2 service first
+    const candidates = [
+        `https://www.google.com/s2/favicons?sz=128&domain_url=${hostname}`,
+
+        // Root and common static asset locations
+        `${origin}/favicon.ico`,
+        `${origin}/favicon.png`,
+        `${origin}/assets/favicon.ico`,
+        `${origin}/assets/favicon.png`,
+        `${origin}/assets/images/favicon.ico`,
+        `${origin}/assets/images/favicon.png`,
+        `${origin}/static/favicon.ico`,
+        `${origin}/static/favicon.png`,
+        `${origin}/images/favicon.ico`,
+        `${origin}/images/favicon.png`,
+        `${origin}/icons/favicon.ico`,
+        `${origin}/icons/favicon.png`
+    ];
+
+    // Helper to check if image loads
+    function imageExists(src) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve(src);
+            img.onerror = () => resolve(null);
+            img.src = src + '?v=' + Date.now(); // prevent cache issues
+        });
+    }
+
+    for (let candidate of candidates) {
+        let result = await imageExists(candidate);
+        if (result) return result;
+    }
+    return null;
+}
+
+
+function capitalize(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Keyboard: add with Ctrl+RightClick on any quick link
+quickLinksSection.addEventListener('contextmenu', function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        closeAllContexts();
+        addQuickLinkPrompt();
+    }
+});
+
+// Initialize
+renderQuickLinks();
+
+window.addEventListener('resize', renderQuickLinks);
+
+// Context menu for empty quick links area
+quickLinksSection.addEventListener('contextmenu', function (e) {
+    if (e.target.closest('.quick-link')) return;
+    e.preventDefault();
+    closeAllContexts();
+    let menu = document.createElement('div');
+    menu.className = 'quick-link-context show';
+    menu.style.position = 'fixed';
+    menu.style.top = `${e.clientY}px`;
+    menu.style.left = `${e.clientX}px`;
+    let addBtn = document.createElement('button');
+    addBtn.textContent = 'Add Quick Link';
+    addBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        closeAllContexts();
+        addQuickLinkPrompt();
+    };
+    menu.appendChild(addBtn);
+    document.body.appendChild(menu);
+    setTimeout(() => {
+        document.addEventListener('click', closeAllContexts, { once: true });
+    }, 0);
+});
+
+function closeAllContexts() {
+    document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
+    document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
+}
+
