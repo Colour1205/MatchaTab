@@ -122,6 +122,12 @@ body {
     }
 }
 
+@media (max-height: 345px) {
+    .searchbar-container {
+        display: none!important;
+    }
+}
+
 .clock {
     /* responsisve font size */
     font-size: clamp(4rem, min(13vw, 13vh), 7rem);
