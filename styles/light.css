@@ -64,7 +64,7 @@ body {
 
 .information-wrapper {
     position: absolute;
-    top: 5%;
+    top: 15%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: flex;
@@ -81,6 +81,46 @@ body {
     overflow-y: auto;
 }
 
+@media (max-height: 610px) {
+    .information-wrapper {
+        top: 10%;
+    }
+}
+
+@media (max-height: 540px) {
+    .information-wrapper {
+        top: 5%;
+    }
+}
+
+@media (max-height: 485px) {
+    .information-wrapper {
+        top: 2%;
+    }
+}
+
+@media (max-height: 450px) {
+    .information-wrapper {
+        top: 0%;
+    }
+}
+
+@media (max-height: 430px) {
+    .clock {
+        display: none;
+    }
+}
+
+@media (max-width: 338px) {
+    #send-button {
+        display: none !important;
+    }
+
+    .searchbar-container {
+        min-width: 0 !important;
+        width: 90% !important;
+    }
+}
 
 .clock {
     /* responsisve font size */
