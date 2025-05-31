@@ -262,7 +262,6 @@ function closeAllContexts() {
 async function editQuickLinkPrompt(idx) {
     let links = getStoredQuickLinks();
     let current = links[idx];
-    // Prompt for new URL, prefill with the current URL
     let url = prompt('Enter new URL:', current.url);
     if (!url) return;
     url = url.trim();
@@ -271,13 +270,15 @@ async function editQuickLinkPrompt(idx) {
     try {
         let name = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
         let faviconUrl = await fetchFavicon(url);
-        links[idx] = { url, name: capitalize(name), faviconUrl };
+        let dataUrl = await fetchAndCacheFavicon(faviconUrl);
+        links[idx] = { url, name: capitalize(name), faviconUrl: dataUrl || faviconUrl };
         storeQuickLinks(links);
         renderQuickLinks();
     } catch {
         alert('Invalid URL.');
     }
 }
+
 
 // Add quick link flow
 async function addQuickLinkPrompt() {
@@ -287,9 +288,9 @@ async function addQuickLinkPrompt() {
     if (!/^https?:\/\//.test(url)) url = 'https://' + url;
     try {
         let name = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
-        // Try to fetch favicon
         let faviconUrl = await fetchFavicon(url);
-        let newLink = { url, name: capitalize(name), faviconUrl };
+        let dataUrl = await fetchAndCacheFavicon(faviconUrl);
+        let newLink = { url, name: capitalize(name), faviconUrl: dataUrl || faviconUrl };
         let links = getStoredQuickLinks();
         links.push(newLink);
         storeQuickLinks(links);
@@ -298,6 +299,7 @@ async function addQuickLinkPrompt() {
         alert('Invalid URL.');
     }
 }
+
 
 // Try to get favicon, else null
 async function fetchFavicon(url) {
@@ -330,6 +332,27 @@ async function fetchFavicon(url) {
         if (result) return result;
     }
     return null;
+}
+
+// New function to fetch and cache favicon as Base64
+async function fetchAndCacheFavicon(faviconUrl) {
+    const cacheKey = "favicon_" + btoa(faviconUrl);
+    let cached = localStorage.getItem(cacheKey);
+    if (cached) return cached;
+    try {
+        const response = await fetch(faviconUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        return await new Promise((resolve) => {
+            reader.onloadend = () => {
+                localStorage.setItem(cacheKey, reader.result);
+                resolve(reader.result);
+            };
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        return faviconUrl; // Fallback to URL
+    }
 }
 
 function capitalize(s) {
