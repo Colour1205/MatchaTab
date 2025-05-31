@@ -123,7 +123,6 @@ if (!getStoredQuickLinks()) {
 
 function renderQuickLinks() {
     let links = getStoredQuickLinks();
-    // Ensure minimum 8 empty slots for grid, if <4 cols, add invisible placeholder
     let minVisible = Math.max(links.length, 8);
     quickLinksSection.innerHTML = '';
 
@@ -175,21 +174,33 @@ function createQuickLinkElement(link, idx) {
         }
     });
 
-    // Context menu (right-click)
-    div.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-        showQuickLinkContextMenu(idx, e, false);
-    });
-
     return div;
 }
 
-function closeAllContexts() {
-    document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
-    document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
-}
+// Unified context menu logic: right-click on quick-link = menu for that link, empty = add menu
+quickLinksSection.addEventListener('contextmenu', function (e) {
+    // Ctrl+RightClick shortcut: always add quick link
+    if (e.ctrlKey) {
+        e.preventDefault();
+        closeAllContexts();
+        addQuickLinkPrompt();
+        return;
+    }
 
-// Context menu logic
+    closeAllContexts();
+    const quickLink = e.target.closest('.quick-link');
+    e.preventDefault();
+
+    if (quickLink) {
+        // Find index of the clicked quick link (skip placeholders)
+        const allQuickLinks = Array.from(quickLinksSection.children).filter(x => x.classList && x.classList.contains('quick-link'));
+        const idx = allQuickLinks.indexOf(quickLink);
+        showQuickLinkContextMenu(idx, e, false);
+    } else {
+        showQuickLinkContextMenu(null, e, true);
+    }
+});
+
 function showQuickLinkContextMenu(idx, e, isEmptyArea = false) {
     closeAllContexts(); // Remove any old menus
 
@@ -204,7 +215,7 @@ function showQuickLinkContextMenu(idx, e, isEmptyArea = false) {
     if (isEmptyArea) {
         // Only "Add Quick Link" when right-clicking empty area
         const addBtn = document.createElement('button');
-        addBtn.textContent = 'Add Quick Link';
+        addBtn.textContent = 'New Quick Link';
         addBtn.onclick = (ev) => {
             ev.stopPropagation();
             closeAllContexts();
@@ -212,18 +223,18 @@ function showQuickLinkContextMenu(idx, e, isEmptyArea = false) {
         };
         menu.appendChild(addBtn);
     } else {
-        // "Add Quick Link" + "Remove This Link" for quick link item
-        const addBtn = document.createElement('button');
-        addBtn.textContent = 'Add Quick Link';
-        addBtn.onclick = (ev) => {
+        // "Edit Quick Link" + "Remove This Link" for quick link item
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = (ev) => {
             ev.stopPropagation();
             closeAllContexts();
-            addQuickLinkPrompt();
+            editQuickLinkPrompt(idx);
         };
-        menu.appendChild(addBtn);
+        menu.appendChild(editBtn);
 
         const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'Remove This Link';
+        removeBtn.textContent = 'Delete';
         removeBtn.onclick = (ev) => {
             ev.stopPropagation();
             let links = getStoredQuickLinks();
@@ -242,14 +253,35 @@ function showQuickLinkContextMenu(idx, e, isEmptyArea = false) {
     }, 0);
 }
 
-// Close all context menus
 function closeAllContexts() {
     document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
+    document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
+}
+
+// Edit quick link flow
+async function editQuickLinkPrompt(idx) {
+    let links = getStoredQuickLinks();
+    let current = links[idx];
+    // Prompt for new URL, prefill with the current URL
+    let url = prompt('Enter new URL:', current.url);
+    if (!url) return;
+    url = url.trim();
+    if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+
+    try {
+        let name = new URL(url).hostname.replace(/^www\./, '').split('.')[0];
+        let faviconUrl = await fetchFavicon(url);
+        links[idx] = { url, name: capitalize(name), faviconUrl };
+        storeQuickLinks(links);
+        renderQuickLinks();
+    } catch {
+        alert('Invalid URL.');
+    }
 }
 
 // Add quick link flow
 async function addQuickLinkPrompt() {
-    let url = prompt('Enter the URL for the quick link:');
+    let url = prompt('Enter URL: ');
     if (!url) return;
     url = url.trim();
     if (!/^https?:\/\//.test(url)) url = 'https://' + url;
@@ -304,48 +336,10 @@ function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Keyboard: add with Ctrl+RightClick on any quick link
-quickLinksSection.addEventListener('contextmenu', function (e) {
-    if (e.ctrlKey) {
-        e.preventDefault();
-        closeAllContexts();
-        addQuickLinkPrompt();
-    }
-});
-
 // Initialize
 renderQuickLinks();
 
 window.addEventListener('resize', renderQuickLinks);
-
-// Context menu for empty quick links area
-quickLinksSection.addEventListener('contextmenu', function (e) {
-    if (e.target.closest('.quick-link')) return;
-    e.preventDefault();
-    closeAllContexts();
-    let menu = document.createElement('div');
-    menu.className = 'quick-link-context show';
-    menu.style.position = 'fixed';
-    menu.style.top = `${e.clientY}px`;
-    menu.style.left = `${e.clientX}px`;
-    let addBtn = document.createElement('button');
-    addBtn.textContent = 'Add Quick Link';
-    addBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        closeAllContexts();
-        addQuickLinkPrompt();
-    };
-    menu.appendChild(addBtn);
-    document.body.appendChild(menu);
-    setTimeout(() => {
-        document.addEventListener('click', closeAllContexts, { once: true });
-    }, 0);
-});
-
-function closeAllContexts() {
-    document.querySelectorAll('.quick-link-context').forEach(ctx => ctx.remove());
-    document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
-}
 
 /* stock section */
 // Stock prices using Twelve Data API
