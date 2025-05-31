@@ -152,10 +152,10 @@ body {
 #send-button {
     margin-left: 10px;
     display: flex;
-    padding: 15px;
+    padding: 14px;
     border: none;
     background: rgba(255, 255, 255, 0.6);
-    border-radius: 14px;
+    border-radius: 20px;
     cursor: pointer;
     flex-shrink: 0;
     justify-content: center;
