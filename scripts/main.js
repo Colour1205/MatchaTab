@@ -473,3 +473,94 @@ async function updateStockPrices(force = false) {
 }
 
 updateStockPrices();
+
+/* news section */
+
+const NEWS_API_KEY = '52263f1f3e6a432e9f8d8f97bd1ec24a';
+const NEWS_CACHE_KEY = 'news_cache_v1';
+const NEWS_CACHE_TIME = 12 * 60 * 60 * 1000; // 12 hours in ms
+
+async function fetchNewsFromAPI() {
+    const url = `https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${NEWS_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+}
+
+function cacheNews(data) {
+    localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({
+        data: data,
+        timestamp: Date.now()
+    }));
+}
+
+function getCachedNews() {
+    const cached = localStorage.getItem(NEWS_CACHE_KEY);
+    if (!cached) return null;
+    try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.timestamp < NEWS_CACHE_TIME) {
+            return parsed.data;
+        } else {
+            // Expired
+            return null;
+        }
+    } catch {
+        return null;
+    }
+}
+
+async function loadNews() {
+    const newsSection = document.getElementById('news-section');
+    newsSection.innerHTML = '<div class="news-card"><div class="news-title">Loading news...</div></div>';
+
+    let data = getCachedNews();
+
+    if (!data) {
+        try {
+            data = await fetchNewsFromAPI();
+            if (data && data.status === "ok") {
+                cacheNews(data);
+            }
+        } catch (err) {
+            newsSection.innerHTML = '<div class="news-card"><div class="news-title">Failed to load news.</div></div>';
+            return;
+        }
+    }
+
+    if (!data || !data.articles || data.articles.length === 0) {
+        newsSection.innerHTML = '<div class="news-card"><div class="news-title">No news available.</div></div>';
+        return;
+    }
+
+    newsSection.innerHTML = '';
+    data.articles.forEach(article => {
+        const card = document.createElement('div');
+        card.className = 'news-card';
+
+        // Only show image if it exists
+        const imgHtml = article.urlToImage
+            ? `<img class="news-image" src="${article.urlToImage}" alt="" loading="lazy">`
+            : '';
+
+        // truncate description to 120 characters
+        let desc = article.description ? article.description.trim() : '';
+        if (desc.length > 120) {
+            desc = desc.substring(0, 120) + '...';
+        }
+
+        card.innerHTML = `
+            ${imgHtml}
+            <div class="news-title">${article.title ? article.title : ''}</div>
+            <div class="news-summary">${desc}</div>
+            <a href="${article.url}" target="_blank" style="margin-top: 5px; font-size: 0.93rem; color: #6251c5; text-decoration: none;">Read more</a>
+        `;
+        newsSection.appendChild(card);
+    });
+}
+
+// On page load
+window.addEventListener('DOMContentLoaded', loadNews);
+
+// Refresh news every 12 hours (refreshes the cache and UI)
+setInterval(loadNews, NEWS_CACHE_TIME);
