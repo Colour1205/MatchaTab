@@ -474,7 +474,7 @@ async function updateStockPrices(force = false) {
         return;
     }
 
-    // --- Fetch new data
+    // Fetch new data
     let dataForCache = {};
     for (const { symbol, elemId } of STOCK_SYMBOLS) {
         await fetchAlphaVantageQuote(symbol, elemId);
