@@ -350,74 +350,100 @@ function closeAllContexts() {
 /* stock section */
 // Stock prices using Twelve Data API
 
-const TD_API_KEY = '34440ab8c99745b4994f8b7bc0c1c8b7';
+const AV_API_KEY = 'BKNCBQBE3RO0VAE7';
+
 const STOCK_SYMBOLS = [
     { symbol: 'AAPL', elemId: 'stock-aapl', label: 'AAPL' },
     { symbol: 'TSLA', elemId: 'stock-tsla', label: 'TSLA' },
     { symbol: 'SPY', elemId: 'stock-spy', label: 'S&P 500' }
 ];
 
-// Helper to fetch and display one quote
-async function fetchTwelveDataBatch(symbols) {
-    const url = `https://api.twelvedata.com/quote?symbol=${symbols.join(',')}&apikey=${TD_API_KEY}`;
-    const res = await fetch(url);
-    return res.json();
+// Cache helpers
+function getLastFetchInfo() {
+    const s = localStorage.getItem("stockFetchCache");
+    if (!s) return null;
+    try { return JSON.parse(s); } catch { return null; }
+}
+function setLastFetchInfo(pricesObj) {
+    localStorage.setItem("stockFetchCache", JSON.stringify(pricesObj));
 }
 
-function renderTwelveDataQuotes(data) {
-    for (const { symbol, elemId } of STOCK_SYMBOLS) {
-        const priceElem = document.querySelector(`#${elemId} .stock-price`);
-        const stock = data[symbol];
+// Market open helper (NY time)
+function isMarketOpen() {
+    const now = new Date();
+    const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = nowNY.getDay(); // 0=Sun, 6=Sat
+    const h = nowNY.getHours(), m = nowNY.getMinutes();
+    if (day === 0 || day === 6) return false;
+    if (h < 9 || (h === 9 && m < 30)) return false;
+    if (h > 16 || (h === 16 && m > 0)) return false;
+    return true;
+}
 
-        if (!priceElem || !stock || stock.code) {
-            if (priceElem) priceElem.textContent = "—";
-            continue;
-        }
-        let price = parseFloat(stock.price);
-        if (!price || isNaN(price)) price = parseFloat(stock.previous_close);
-
-        // Percent change: use percent_change if available, else fallback to previous_close - previous_open
-        let percentChange = parseFloat(stock.percent_change);
-        if (isNaN(percentChange) && stock.previous_close && stock.previous_open) {
-            percentChange = ((parseFloat(stock.previous_close) - parseFloat(stock.previous_open)) / parseFloat(stock.previous_open)) * 100;
-        }
-        if (isNaN(percentChange)) percentChange = 0;
-
-        let color = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
-        let sign = percentChange > 0 ? "+" : "";
-
-        if (price && !isNaN(price)) {
-            priceElem.innerHTML =
-                `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+// Render function
+function renderQuote(symbol, elemId, q) {
+    const priceElem = document.querySelector(`#${elemId} .stock-price`);
+    if (!q || !priceElem || !q["05. price"]) {
+        if (priceElem) priceElem.textContent = "—";
+        return;
+    }
+    const price = parseFloat(q["05. price"]);
+    let percentChange = parseFloat((q["10. change percent"] || "0").replace("%", ""));
+    let color = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
+    let sign = percentChange > 0 ? "+" : "";
+    if (isNaN(percentChange)) {
+        // fallback: calculate from close/open if possible
+        const open = parseFloat(q["02. open"]);
+        const prevClose = parseFloat(q["08. previous close"]);
+        if (!isNaN(open) && !isNaN(prevClose)) {
+            percentChange = ((prevClose - open) / open) * 100;
         } else {
-            priceElem.textContent = "—";
+            percentChange = 0;
         }
+    }
+    if (price && !isNaN(price)) {
+        priceElem.innerHTML =
+            `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+    } else {
+        priceElem.textContent = "—";
     }
 }
 
+// Alpha Vantage fetch (per symbol; batch not supported for change %)
+async function fetchAlphaVantageQuote(symbol, elemId) {
+    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AV_API_KEY}`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const q = data["Global Quote"];
+        renderQuote(symbol, elemId, q);
+    } catch {
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        if (priceElem) priceElem.textContent = "—";
+    }
+}
+
+// Main update/caching logic
 async function updateStockPrices(force = false) {
     const cache = getLastFetchInfo();
     const now = Date.now();
     const tenMinutes = 10 * 60 * 1000;
     const marketOpen = isMarketOpen();
-
-    // Check cache validity
     let canFetch = force;
+
     if (!force && cache) {
         const lastFetch = cache.timestamp || 0;
         const isSameDay = (new Date(lastFetch)).toDateString() === (new Date()).toDateString();
         if (marketOpen) {
-            // During market hours, allow update only if >10min since last fetch or different day
             if (now - lastFetch > tenMinutes || !isSameDay) canFetch = true;
         } else {
-            // Market closed: only update if cache is empty or not today
             if (!cache.marketClosed || !isSameDay) canFetch = true;
         }
     } else {
         canFetch = true;
     }
 
-    // Use cache if fetch is not needed
+    // Use cache if fetch not needed
     if (!canFetch && cache && cache.data) {
         STOCK_SYMBOLS.forEach(({ elemId, symbol }) => {
             const cached = cache.data[symbol];
@@ -431,59 +457,19 @@ async function updateStockPrices(force = false) {
         return;
     }
 
-    // --- Fetch new data in batch
-    try {
-        const data = await fetchTwelveDataBatch(STOCK_SYMBOLS.map(s => s.symbol));
-        renderTwelveDataQuotes(data);
-        // Save current display to cache
-        let cacheData = {};
-        STOCK_SYMBOLS.forEach(({ elemId, symbol }) => {
-            const priceElem = document.querySelector(`#${elemId} .stock-price`);
-            cacheData[symbol] = priceElem ? priceElem.innerHTML : "—";
-        });
-        setLastFetchInfo({
-            timestamp: Date.now(),
-            data: cacheData,
-            marketClosed: !marketOpen
-        });
-    } catch {
-        // On failure, display dashes
-        STOCK_SYMBOLS.forEach(({ elemId }) => {
-            const priceElem = document.querySelector(`#${elemId} .stock-price`);
-            if (priceElem) priceElem.textContent = "—";
-        });
+    // --- Fetch new data
+    let dataForCache = {};
+    for (const { symbol, elemId } of STOCK_SYMBOLS) {
+        await fetchAlphaVantageQuote(symbol, elemId);
+        // Save what's rendered
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        dataForCache[symbol] = priceElem ? priceElem.innerHTML : "—";
     }
-}
-
-// US Market hours: 9:30 AM to 4:00 PM Eastern Time (convert to local time as needed)
-function isMarketOpen() {
-    const now = new Date();
-    const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-    const day = nowNY.getDay(); // 0 = Sunday, 6 = Saturday
-    const hours = nowNY.getHours();
-    const minutes = nowNY.getMinutes();
-
-    if (day === 0 || day === 6) return false;
-    if (hours < 9 || (hours === 9 && minutes < 30)) return false;
-    if (hours > 16 || (hours === 16 && minutes > 0)) return false;
-    return true;
-}
-
-function getLastFetchInfo() {
-    const s = localStorage.getItem("stockFetchCache");
-    if (!s) return null;
-    try {
-        return JSON.parse(s);
-    } catch {
-        return null;
-    }
-}
-function setLastFetchInfo(pricesObj) {
-    localStorage.setItem("stockFetchCache", JSON.stringify(pricesObj));
-}
-
-function setLastFetchInfo(pricesObj) {
-    localStorage.setItem("stockFetchCache", JSON.stringify(pricesObj));
+    setLastFetchInfo({
+        timestamp: Date.now(),
+        data: dataForCache,
+        marketClosed: !marketOpen
+    });
 }
 
 updateStockPrices();

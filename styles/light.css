@@ -351,6 +351,13 @@ body {
     color: #1a2346;
 }
 
+.information-wrapper,
+#quick-links-section {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
 /* responsive styles */
 
 @media (max-width: 700px) {
