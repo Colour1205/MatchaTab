@@ -364,10 +364,7 @@ renderQuickLinks();
 
 window.addEventListener('resize', renderQuickLinks);
 
-/* stock section */
-// Stock prices using Twelve Data API
-
-const AV_API_KEY = 'BKNCBQBE3RO0VAE7';
+/* STOCK SECTION : yahoo API */
 
 const STOCK_SYMBOLS = [
     { symbol: 'AAPL', elemId: 'stock-aapl', label: 'AAPL' },
@@ -375,121 +372,50 @@ const STOCK_SYMBOLS = [
     { symbol: 'SPY', elemId: 'stock-spy', label: 'S&P 500' }
 ];
 
-// Cache helpers
-function getLastFetchInfo() {
-    const s = localStorage.getItem("stockFetchCache");
-    if (!s) return null;
-    try { return JSON.parse(s); } catch { return null; }
-}
-function setLastFetchInfo(pricesObj) {
-    localStorage.setItem("stockFetchCache", JSON.stringify(pricesObj));
-}
-
-// Market open helper (NY time)
-function isMarketOpen() {
-    const now = new Date();
-    const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-    const day = nowNY.getDay(); // 0=Sun, 6=Sat
-    const h = nowNY.getHours(), m = nowNY.getMinutes();
-    if (day === 0 || day === 6) return false;
-    if (h < 9 || (h === 9 && m < 30)) return false;
-    if (h > 16 || (h === 16 && m > 0)) return false;
-    return true;
-}
-
-// Render function
-function renderQuote(symbol, elemId, q) {
-    const priceElem = document.querySelector(`#${elemId} .stock-price`);
-    if (!q || !priceElem || !q["05. price"]) {
-        if (priceElem) priceElem.textContent = "—";
-        return;
-    }
-    const price = parseFloat(q["05. price"]);
-    let percentChange = parseFloat((q["10. change percent"] || "0").replace("%", ""));
-    let color = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
-    let sign = percentChange > 0 ? "+" : "";
-    if (isNaN(percentChange)) {
-        // fallback: calculate from close/open if possible
-        const open = parseFloat(q["02. open"]);
-        const prevClose = parseFloat(q["08. previous close"]);
-        if (!isNaN(open) && !isNaN(prevClose)) {
-            percentChange = ((prevClose - open) / open) * 100;
-        } else {
-            percentChange = 0;
-        }
-    }
-    if (price && !isNaN(price)) {
-        priceElem.innerHTML =
-            `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
-    } else {
-        priceElem.textContent = "—";
-    }
-}
-
-// Alpha Vantage fetch (per symbol; batch not supported for change %)
-async function fetchAlphaVantageQuote(symbol, elemId) {
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AV_API_KEY}`;
+// Helper function to fetch price from Yahoo Finance
+async function fetchYahooQuote(symbol) {
     try {
+        const url = `https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?symbol=${symbol}`;
         const res = await fetch(url);
         const data = await res.json();
-        const q = data["Global Quote"];
-        renderQuote(symbol, elemId, q);
+        // Defensive checks for data
+        if (!data.chart || !data.chart.result || !data.chart.result[0]) return null;
+        const meta = data.chart.result[0].meta;
+        // Try to use regularMarketPrice or previousClose as fallback
+        let price = meta.regularMarketPrice ?? meta.previousClose ?? null;
+        let prevClose = meta.previousClose ?? null;
+        if (price == null || prevClose == null) return null;
+        // Calculate percent change
+        const percentChange = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+        return { price, percentChange };
     } catch {
-        const priceElem = document.querySelector(`#${elemId} .stock-price`);
-        if (priceElem) priceElem.textContent = "—";
+        return null;
     }
 }
 
-// Main update/caching logic
-async function updateStockPrices(force = false) {
-    const cache = getLastFetchInfo();
-    const now = Date.now();
-    const tenMinutes = 10 * 60 * 1000;
-    const marketOpen = isMarketOpen();
-    let canFetch = force;
-
-    if (!force && cache) {
-        const lastFetch = cache.timestamp || 0;
-        const isSameDay = (new Date(lastFetch)).toDateString() === (new Date()).toDateString();
-        if (marketOpen) {
-            if (now - lastFetch > tenMinutes || !isSameDay) canFetch = true;
-        } else {
-            if (!cache.marketClosed || !isSameDay) canFetch = true;
-        }
-    } else {
-        canFetch = true;
-    }
-
-    // Use cache if fetch not needed
-    if (!canFetch && cache && cache.data) {
-        STOCK_SYMBOLS.forEach(({ elemId, symbol }) => {
-            const cached = cache.data[symbol];
-            const priceElem = document.querySelector(`#${elemId} .stock-price`);
-            if (priceElem && cached) {
-                priceElem.innerHTML = cached;
-            } else if (priceElem) {
+// Update all stock cards with latest prices from Yahoo
+async function updateStockPricesYahoo() {
+    for (const { symbol, elemId } of STOCK_SYMBOLS) {
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        priceElem.textContent = "…";
+        try {
+            const result = await fetchYahooQuote(symbol);
+            if (result) {
+                const { price, percentChange } = result;
+                let color = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
+                let sign = percentChange > 0 ? "+" : "";
+                priceElem.innerHTML = `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+            } else {
                 priceElem.textContent = "—";
             }
-        });
-        return;
+        } catch {
+            priceElem.textContent = "—";
+        }
     }
-
-    // Fetch new data
-    let dataForCache = {};
-    for (const { symbol, elemId } of STOCK_SYMBOLS) {
-        await fetchAlphaVantageQuote(symbol, elemId);
-        // Save what's rendered
-        const priceElem = document.querySelector(`#${elemId} .stock-price`);
-        dataForCache[symbol] = priceElem ? priceElem.innerHTML : "—";
-    }
-    setLastFetchInfo({
-        timestamp: Date.now(),
-        data: dataForCache,
-        marketClosed: !marketOpen
-    });
 }
+updateStockPricesYahoo();
+setInterval(updateStockPricesYahoo, 60000);
 
-updateStockPrices();
 
 /* news section */
 
