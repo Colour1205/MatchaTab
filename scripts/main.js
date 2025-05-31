@@ -493,12 +493,12 @@ updateStockPrices();
 
 /* news section */
 
-const NEWS_API_KEY = '52263f1f3e6a432e9f8d8f97bd1ec24a';
-const NEWS_CACHE_KEY = 'news_cache_v1';
+const GNEWS_API_KEY = 'b5e186a46d4cb2c489f5671c639fc1b8';
+const NEWS_CACHE_KEY = 'news_cache_gnews_v1';
 const NEWS_CACHE_TIME = 12 * 60 * 60 * 1000; // 12 hours in ms
 
-async function fetchNewsFromAPI() {
-    const url = `https://newsapi.org/v2/top-headlines?country=us&pageSize=5&apiKey=${NEWS_API_KEY}`;
+async function fetchNewsFromGNews() {
+    const url = `https://gnews.io/api/v4/top-headlines?token=${GNEWS_API_KEY}&lang=en&country=us&max=10`;
     const response = await fetch(url);
     const data = await response.json();
     return data;
@@ -535,8 +535,8 @@ async function loadNews() {
 
     if (!data) {
         try {
-            data = await fetchNewsFromAPI();
-            if (data && data.status === "ok") {
+            data = await fetchNewsFromGNews();
+            if (data && data.articles && Array.isArray(data.articles)) {
                 cacheNews(data);
             }
         } catch (err) {
@@ -556,8 +556,8 @@ async function loadNews() {
         card.className = 'news-card';
 
         // Only show image if it exists
-        const imgHtml = article.urlToImage
-            ? `<img class="news-image" src="${article.urlToImage}" alt="" loading="lazy">`
+        const imgHtml = article.image
+            ? `<img class="news-image" src="${article.image}" alt="" loading="lazy">`
             : '';
 
         // truncate description to 120 characters
