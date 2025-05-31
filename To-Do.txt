@@ -1,0 +1,5 @@
+TODO list
+- implement simultaneous fetching for stocks
+- ability to customize wallpaper
+- ability to customize stocks
+- show news on two column for larger screens
