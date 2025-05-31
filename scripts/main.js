@@ -88,8 +88,8 @@ const DEFAULT_QUICK_LINKS = [
     },
     {
         name: "Amazon",
-        url: "https://www.amazon.com",
-        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=amazon.com"
+        url: "https://www.amazon.ca",
+        faviconUrl: "https://www.google.com/s2/favicons?sz=128&domain_url=amazon.ca"
     },
     {
         name: "Bilibili",
@@ -347,3 +347,144 @@ function closeAllContexts() {
     document.querySelectorAll('.quick-link.show-context').forEach(el => el.classList.remove('show-context'));
 }
 
+/* stock section */
+// Stock prices using Twelve Data API
+
+const AV_API_KEY = 'BKNCBQBE3RO0VAE7';
+
+const STOCK_SYMBOLS = [
+    { symbol: 'AAPL', elemId: 'stock-aapl', label: 'AAPL' },
+    { symbol: 'TSLA', elemId: 'stock-tsla', label: 'TSLA' },
+    { symbol: 'SPY', elemId: 'stock-spy', label: 'S&P 500' }
+];
+
+// Helper to fetch and display one quote
+async function fetchAlphaVantageQuote(symbol, elemId) {
+    try {
+        const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${AV_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const q = data["Global Quote"];
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        if (q && priceElem && q["05. price"]) {
+            const price = parseFloat(q["05. price"]);
+            // If market is open, use percent change from API. If closed, fallback to previous close/open
+            let percentChange = parseFloat(q["10. change percent"]);
+            let changeColor = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
+            let sign = percentChange > 0 ? "+" : "";
+            if (isNaN(percentChange)) {
+                // fallback: calculate from close/open if possible
+                const open = parseFloat(q["02. open"]);
+                const prevClose = parseFloat(q["08. previous close"]);
+                if (!isNaN(open) && !isNaN(prevClose)) {
+                    percentChange = ((prevClose - open) / open) * 100;
+                } else {
+                    percentChange = 0;
+                }
+            }
+            priceElem.innerHTML =
+                `<span style="color:${changeColor};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+        } else if (priceElem) {
+            priceElem.textContent = "—";
+        }
+    } catch (err) {
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        if (priceElem) priceElem.textContent = "—";
+    }
+}
+
+async function updateStockPrices(force = false) {
+    const cache = getLastFetchInfo();
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    // Market open status
+    const marketOpen = isMarketOpen();
+
+    // Cache validity
+    let canFetch = force;
+    if (!force && cache) {
+        // Compare timestamps
+        const lastFetch = cache.timestamp || 0;
+        const isSameDay = (new Date(lastFetch)).toDateString() === (new Date()).toDateString();
+
+        if (marketOpen) {
+            // During market hours, allow update only if >5min since last fetch or different day
+            if (now - lastFetch > fiveMinutes || !isSameDay) {
+                canFetch = true;
+            }
+        } else {
+            // Market closed: only allow update if cache is empty or not today
+            if (!cache.marketClosed || !isSameDay) {
+                canFetch = true;
+            }
+        }
+    } else {
+        canFetch = true;
+    }
+
+    // If fetch is not needed, use cache
+    if (!canFetch && cache && cache.data) {
+        // Set from cache
+        STOCK_SYMBOLS.forEach(({ elemId, symbol }) => {
+            const cached = cache.data[symbol];
+            const priceElem = document.querySelector(`#${elemId} .stock-price`);
+            if (priceElem && cached) {
+                priceElem.innerHTML = cached;
+            } else if (priceElem) {
+                priceElem.textContent = "—";
+            }
+        });
+        return;
+    }
+
+    // --- Fetch new data
+    for (const { symbol, elemId } of STOCK_SYMBOLS) {
+        await fetchAlphaVantageQuote(symbol, elemId);
+    }
+
+    // Save current display to cache
+    let data = {};
+    STOCK_SYMBOLS.forEach(({ elemId, symbol }) => {
+        const priceElem = document.querySelector(`#${elemId} .stock-price`);
+        data[symbol] = priceElem ? priceElem.innerHTML : "—";
+    });
+    setLastFetchInfo({
+        timestamp: Date.now(),
+        data,
+        marketClosed: !marketOpen
+    });
+}
+
+// US Market hours: 9:30 AM to 4:00 PM Eastern Time (convert to local time as needed)
+function isMarketOpen() {
+    const now = new Date();
+
+    // New York time zone
+    const nowNY = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = nowNY.getDay(); // 0 = Sunday, 6 = Saturday
+    const hours = nowNY.getHours();
+    const minutes = nowNY.getMinutes();
+
+    // Market is open Mon-Fri, 9:30 to 16:00 NY time
+    if (day === 0 || day === 6) return false; // closed weekends
+    if (hours < 9 || (hours === 9 && minutes < 30)) return false; // before 9:30
+    if (hours > 16 || (hours === 16 && minutes > 0)) return false; // after 16:00
+    return true;
+}
+
+function getLastFetchInfo() {
+    const s = localStorage.getItem("stockFetchCache");
+    if (!s) return null;
+    try {
+        return JSON.parse(s);
+    } catch {
+        return null;
+    }
+}
+
+function setLastFetchInfo(pricesObj) {
+    localStorage.setItem("stockFetchCache", JSON.stringify(pricesObj));
+}
+
+updateStockPrices();
