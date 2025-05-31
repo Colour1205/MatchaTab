@@ -48,6 +48,13 @@
     </div>
 
     <script src="scripts/main.js"></script>
+    <!-- At end of body (after main.js is loaded) -->
+    <script src="https://cdn.jsdelivr.net/npm/overscroll/bundle/overscroll.min.js"></script>
+    <script>
+        overscroll(document.querySelector('.information-wrapper'));
+        overscroll(document.querySelector('#quick-links-section'));
+    </script>
+
 </body>
 
 </html>
