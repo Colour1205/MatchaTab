@@ -454,8 +454,8 @@ body {
     backdrop-filter: blur(0px);
     z-index: 2;
     position: fixed;
-    height: 100vh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
     top: 0;
     left: 0;
     display: flex;
@@ -489,8 +489,11 @@ body {
 }
 
 .settings-panel {
-    width: 90vw;
-    max-width: 500px;
+    width: 100%;
+    margin-left: 5vw;
+    margin-right: 5vw;
+    max-width: 320px;
+    min-width: 70px;
     background: rgba(255, 255, 255, 0.7);
     border-radius: 20px;
     padding: 20px;
@@ -498,9 +501,17 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: 150%;
+    margin-top: 150vh;
     transition: margin-top 0.4s cubic-bezier(.35, 1.17, .39, 1);
-    height: 40vh;
+    max-height: 320px;
+    height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+
+.settings-panel::-webkit-scrollbar {
+    display: none;
 }
 
 .settings-panel.show {
