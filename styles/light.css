@@ -13,14 +13,15 @@ body {
 
 .background {
     position: fixed;
-    top: -10%;
-    left: -10%;
-    width: 120vw;
-    height: 120vh;
+    width: 100vw;
+    height: 100vh;
     background: url('../assets/images/background-image.jpg') no-repeat center center fixed;
     background-size: cover;
-    filter: blur(20px);
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(0px);
     z-index: -1;
+    transition: background-image 0.3s ease;
 }
 
 .background-wrapper {
@@ -28,15 +29,11 @@ body {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100dvh;
+    height: 100vh;
     overflow: hidden;
     z-index: -1;
-}
-
-@supports not (height: 100dvh) {
-    .background-wrapper {
-        height: 100vh;
-    }
+    transform: scale(1.2);
+    transition: transform 1.4s cubic-bezier(0, .98, .49, 1);
 }
 
 .background-overlay {
@@ -53,7 +50,7 @@ body {
 .information-wrapper {
     position: absolute;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, 0);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -62,13 +59,15 @@ body {
     z-index: 2;
     width: 100vw;
     max-width: 100vw;
-    transform: translate(-50%, 0);
     overflow-y: auto;
     scrollbar-width: none;
     padding-top: 12%;
     padding-bottom: 5%;
     top: 0px;
     bottom: 0px;
+    transition-duration: 1.4s;
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0, .98, .49, 1)
 }
 
 .information-wrapper::-webkit-scrollbar {
@@ -95,6 +94,7 @@ body {
     width: 100%;
     flex-wrap: wrap;
     height: 60px;
+    backdrop-filter: blur(20px);
 }
 
 .search-container input[type="text"] {
@@ -165,6 +165,7 @@ body {
     transition-property: transform, box-shadow;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
+    backdrop-filter: blur(20px);
 }
 
 #send-button:hover {
@@ -243,6 +244,7 @@ body {
     transition: background 0.2s, box-shadow 0.2s;
     position: relative;
     user-select: none;
+    backdrop-filter: blur(20px);
 }
 
 .quick-link:hover {
@@ -332,6 +334,7 @@ body {
     font-family: inherit;
     font-weight: 500;
     transition: box-shadow 0.18s;
+    backdrop-filter: blur(20px);
 }
 
 .stock-card:hover {
@@ -377,6 +380,7 @@ body {
     transition-duration: 0.2s;
     transition-timing-function: ease;
     margin-bottom: 4px;
+    backdrop-filter: blur(20px);
 }
 
 .news-card:hover {
@@ -408,7 +412,124 @@ body {
     display: block;
 }
 
+/* --- side container ---*/
+.side-container {
+    z-index: 3;
+}
 
+/* settings button */
+#settings-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 35px;
+    height: 35px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    transition-property: box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
+}
+
+#settings-button:hover {
+    background: rgba(210, 210, 255, 0.77);
+    box-shadow: 0 3px 12px rgba(85, 76, 186, 0.09);
+    transform: scale(1.1);
+}
+
+#settings-button:active {
+    transform: scale(1) translateY(-0.2);
+}
+
+/* settings panel */
+#settings-container {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0s cubic-bezier(0, .98, .49, 1) 0s,
+        backdrop-filter 0.9s cubic-bezier(0.35, .88, .49, 1);
+    backdrop-filter: blur(0px);
+    z-index: 2;
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#settings-container.show {
+    opacity: 1;
+    pointer-events: auto;
+    backdrop-filter: blur(20px);
+    transition:
+        opacity 0s cubic-bezier(0, .98, .49, 1) 0s,
+        backdrop-filter 0.9s cubic-bezier(0, .98, .49, 1) 0s;
+}
+
+#settings-container.close {
+    /* When closing: delay opacity, but blur animates immediately */
+    transition:
+        opacity 0s cubic-bezier(0, .98, .49, 1) 0.9s,
+        backdrop-filter 0.9s cubic-bezier(0, .98, .49, 1);
+}
+
+
+.information-wrapper.scaled {
+    transform: translate(-50%, 0) scale(0.93);
+}
+
+.background-wrapper.scaled {
+    transform: scale(1.27);
+}
+
+.settings-panel {
+    width: 90vw;
+    max-width: 500px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 150%;
+    transition: margin-top 0.4s cubic-bezier(.35, 1.17, .39, 1);
+    height: 40vh;
+}
+
+.settings-panel.show {
+    margin-top: 0;
+}
+
+
+#wallpaper-button {
+    padding: 20px;
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(209, 209, 254, 0.77);
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+
+}
+
+#wallpaper-button:hover {
+    background: rgba(190, 190, 254, 0.77);
+    box-shadow: 0 0 10px rgba(96, 96, 169, 0.275);
+    transform: scale(1.05);
+}
+
+#wallpaper-button:active {
+    transform: scale(0.99);
+    box-shadow: 0 0 15px rgba(96, 96, 169, 0.575);
+}
 
 /* responsive styles */
 

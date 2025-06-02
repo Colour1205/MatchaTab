@@ -1,3 +1,33 @@
+// --- Background Blur Slider ---
+const BLUR_KEY = 'userBgBlurV1';
+const blurSlider = document.getElementById('blur-slider');
+const blurValueLabel = document.getElementById('blur-value');
+
+function setBackgroundBlur(px) {
+    const bgElem = document.querySelector('.background');
+    if (bgElem) {
+        bgElem.style.filter = `blur(${px}px)`;
+    }
+}
+
+// On page load, set blur from storage or default
+let storedBlur = parseInt(localStorage.getItem(BLUR_KEY), 10);
+if (isNaN(storedBlur)) storedBlur = 0;
+setBackgroundBlur(storedBlur);
+if (blurSlider) {
+    blurSlider.value = storedBlur;
+    blurValueLabel.textContent = storedBlur;
+}
+
+if (blurSlider) {
+    blurSlider.addEventListener('input', function () {
+        const val = parseInt(this.value, 10);
+        setBackgroundBlur(val);
+        blurValueLabel.textContent = val;
+        localStorage.setItem(BLUR_KEY, val);
+    });
+}
+
 function updateClock() {
     const now = new Date();
     const time = now.toLocaleTimeString([], {
@@ -507,3 +537,74 @@ window.addEventListener('DOMContentLoaded', loadNews);
 
 // Refresh news every 12 hours (refreshes the cache and UI)
 setInterval(loadNews, NEWS_CACHE_TIME);
+
+/* settings button */
+
+const settingsBtn = document.getElementById('settings-button');
+const infoWrapper = document.querySelector('.information-wrapper');
+const settingsPanel = document.querySelector('.settings-panel');
+const settingsContainer = document.getElementById('settings-container');
+const wallpaperBtn = document.getElementById('wallpaper-button');
+const wallpaperFileInput = document.getElementById('wallpaper-file-input');
+const backgroundWrapper = document.querySelector('.background-wrapper');
+
+settingsBtn.addEventListener('click', () => {
+    const isOpen = settingsContainer.classList.contains('show');
+
+    if (isOpen) {
+        // close settings panel
+        settingsPanel.classList.remove('show');
+        infoWrapper.classList.remove('scaled');
+        settingsContainer.classList.add('close');
+        settingsContainer.classList.remove('show');
+        backgroundWrapper.classList.remove('scaled');
+        setTimeout(() => {
+            settingsContainer.classList.remove('close');
+        }, 900); // Match the CSS transition duration
+    } else {
+        if (settingsContainer.classList.contains('close')) {
+            settingsContainer.classList.remove('close');
+        }
+        backgroundWrapper.classList.add('scaled');
+        settingsContainer.classList.add('show');
+        infoWrapper.classList.add('scaled');
+        settingsPanel.classList.add('show');
+    }
+});
+
+// Wallpaper change logic
+const WALLPAPER_KEY = 'userWallpaperV1';
+
+// Helper to set background image
+function setBackgroundImage(imageDataUrl) {
+    // .background is the element for wallpaper
+    const bgElem = document.querySelector('.background');
+    if (bgElem) {
+        bgElem.style.backgroundImage = imageDataUrl ? `url('${imageDataUrl}')` : '';
+    }
+}
+
+// On page load, check for stored wallpaper
+const storedWallpaper = localStorage.getItem(WALLPAPER_KEY);
+if (storedWallpaper) {
+    setBackgroundImage(storedWallpaper);
+}
+
+// Button click opens file selector
+wallpaperBtn.addEventListener('click', () => {
+    wallpaperFileInput.value = '';
+    wallpaperFileInput.click();
+});
+
+// When file selected, read and set as background
+wallpaperFileInput.addEventListener('change', function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const dataUrl = e.target.result;
+        setBackgroundImage(dataUrl);
+        localStorage.setItem(WALLPAPER_KEY, dataUrl);
+    };
+    reader.readAsDataURL(file);
+});
