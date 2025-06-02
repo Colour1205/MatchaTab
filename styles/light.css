@@ -19,7 +19,7 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(0px);
+    filter: blur(10px);
     z-index: -1;
     transition: background-image 0.3s ease;
 }
@@ -415,6 +415,7 @@ body {
 /* --- side container ---*/
 .side-container {
     z-index: 3;
+    position: fixed;
 }
 
 /* settings button */
@@ -435,7 +436,6 @@ body {
 }
 
 #settings-button:hover {
-    background: rgba(210, 210, 255, 0.77);
     box-shadow: 0 3px 12px rgba(85, 76, 186, 0.09);
     transform: scale(1.1);
 }
