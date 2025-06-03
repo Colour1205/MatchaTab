@@ -644,3 +644,18 @@ wallpaperFileInput.addEventListener('change', function () {
     };
     reader.readAsDataURL(file);
 });
+
+/* light dark theme switch */
+// Get the link element
+const themeLink = document.getElementById('theme-style');
+
+function setThemeBySystem() {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    themeLink.href = prefersDark ? 'styles/dark.css' : 'styles/light.css';
+}
+
+// Initial check
+setThemeBySystem();
+
+// Listen for changes in system theme
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setThemeBySystem);
