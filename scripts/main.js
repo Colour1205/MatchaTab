@@ -90,7 +90,7 @@ function sendAction() {
     }
 }
 
-// --- QUICK LINKS LOGIC ---
+// --- QUICK LINKS SECTION ---
 
 const quickLinksSection = document.getElementById('quick-links-section');
 const QUICK_LINKS_KEY = 'userQuickLinksV1';
@@ -538,6 +538,31 @@ window.addEventListener('DOMContentLoaded', loadNews);
 // Refresh news every 12 hours (refreshes the cache and UI)
 setInterval(loadNews, NEWS_CACHE_TIME);
 
+// horizontal scroll for stock section
+const stockSection = document.getElementById('stock-section');
+
+stockSection.addEventListener('wheel', function (e) {
+    // Only handle vertical wheel events
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        // Figure out if we can scroll further
+        const atStart = stockSection.scrollLeft === 0;
+        const atEnd = Math.ceil(stockSection.scrollLeft + stockSection.clientWidth) >= stockSection.scrollWidth;
+
+        // User is scrolling left (negative delta)
+        if (e.deltaY < 0 && !atStart) {
+            e.preventDefault();
+            stockSection.scrollLeft += e.deltaY;
+        }
+        // User is scrolling right (positive delta)
+        else if (e.deltaY > 0 && !atEnd) {
+            e.preventDefault();
+            stockSection.scrollLeft += e.deltaY;
+        }
+        // At edge: do nothing, allow normal page scrolling
+    }
+    // If horizontal wheel, let browser handle it natively!
+}, { passive: false });
+
 /* settings button */
 
 const settingsBtn = document.getElementById('settings-button');
@@ -547,30 +572,41 @@ const settingsContainer = document.getElementById('settings-container');
 const wallpaperBtn = document.getElementById('wallpaper-button');
 const wallpaperFileInput = document.getElementById('wallpaper-file-input');
 const backgroundWrapper = document.querySelector('.background-wrapper');
+const closeBtn = document.getElementById('close-settings-button');
 
 settingsBtn.addEventListener('click', () => {
     const isOpen = settingsContainer.classList.contains('show');
 
     if (isOpen) {
-        // close settings panel
-        settingsPanel.classList.remove('show');
-        infoWrapper.classList.remove('scaled');
-        settingsContainer.classList.add('close');
-        settingsContainer.classList.remove('show');
-        backgroundWrapper.classList.remove('scaled');
-        setTimeout(() => {
-            settingsContainer.classList.remove('close');
-        }, 900); // Match the CSS transition duration
+        closeSettingsPanel();
     } else {
-        if (settingsContainer.classList.contains('close')) {
-            settingsContainer.classList.remove('close');
-        }
-        backgroundWrapper.classList.add('scaled');
-        settingsContainer.classList.add('show');
-        infoWrapper.classList.add('scaled');
-        settingsPanel.classList.add('show');
+        showSettingsPanel();
     }
 });
+
+closeBtn.addEventListener('click', () => {
+    closeSettingsPanel();
+});
+
+function closeSettingsPanel() {
+    settingsPanel.classList.remove('show');
+    infoWrapper.classList.remove('scaled');
+    settingsContainer.classList.add('close');
+    settingsContainer.classList.remove('show');
+    backgroundWrapper.classList.remove('scaled');
+    setTimeout(() => {
+        settingsContainer.classList.remove('close');
+    }, 900); // Match the CSS transition duration
+}
+function showSettingsPanel() {
+    if (settingsContainer.classList.contains('close')) {
+        settingsContainer.classList.remove('close');
+    }
+    backgroundWrapper.classList.add('scaled');
+    settingsContainer.classList.add('show');
+    infoWrapper.classList.add('scaled');
+    settingsPanel.classList.add('show');
+}
 
 // Wallpaper change logic
 const WALLPAPER_KEY = 'userWallpaperV1';

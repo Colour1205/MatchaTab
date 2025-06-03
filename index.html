@@ -31,18 +31,20 @@
             </button>
         </div>
         <div id="quick-links-section"></div>
-        <div id="stock-section" class="stock-section">
-            <div class="stock-card" id="stock-aapl">
-                <div class="stock-ticker">AAPL</div>
-                <div class="stock-price">—</div>
-            </div>
-            <div class="stock-card" id="stock-tsla">
-                <div class="stock-ticker">TSLA</div>
-                <div class="stock-price">—</div>
-            </div>
-            <div class="stock-card" id="stock-spy">
-                <div class="stock-ticker">S&amp;P 500</div>
-                <div class="stock-price">—</div>
+        <div class="stock-section-wrap">
+            <div id="stock-section" class="stock-section">
+                <div class="stock-card" id="stock-aapl">
+                    <div class="stock-ticker">AAPL</div>
+                    <div class="stock-price">—</div>
+                </div>
+                <div class="stock-card" id="stock-tsla">
+                    <div class="stock-ticker">TSLA</div>
+                    <div class="stock-price">—</div>
+                </div>
+                <div class="stock-card" id="stock-spy">
+                    <div class="stock-ticker">S&amp;P 500</div>
+                    <div class="stock-price">—</div>
+                </div>
             </div>
         </div>
         <div id="news-section" class="news-section">
@@ -51,7 +53,6 @@
                 <div class="news-summary"></div>
             </div>
         </div>
-
     </div>
 
     <div class="side-container">
@@ -69,6 +70,14 @@
 
     <div class="settings-container" id="settings-container">
         <div class="settings-panel">
+            <button id="close-settings-button">
+                <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g id="Menu / Close_MD">
+                        <path id="Vector" d="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" stroke="#000000"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </g>
+                </svg>
+            </button>
             <button id="wallpaper-button">Select Wallpaper</button>
             <input type="file" id="wallpaper-file-input" accept="image/*" style="display:none" />
             <label for="blur-slider" style="display:block;margin-top:1em;">Background Blur: <span
