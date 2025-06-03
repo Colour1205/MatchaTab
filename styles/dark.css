@@ -1,6 +1,6 @@
 /* Base styles - same structure as light theme but with dark colors */
 :root {
-    --dark-bg-overlay: rgba(15, 15, 20, 0.85);
+    --dark-bg-overlay: rgba(15, 15, 20, 0.8);
     --dark-card-bg: rgba(30, 30, 40, 0.65);
     --dark-card-hover: rgba(45, 45, 60, 0.75);
     --dark-text-primary: rgba(255, 255, 255, 0.92);
