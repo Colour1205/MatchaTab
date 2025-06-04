@@ -2,11 +2,18 @@
 <html>
 
 <head>
+    <!-- 1)\ Hide everything until CSS is ready -->
+    <style>
+        body {
+            visibility: hidden;
+        }
+    </style>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MatchaTab</title>
-    <link id="theme-style" rel="stylesheet" href="styles/light.css">
-    <link rel="icon" href="/assets/images/favicon.ico" type="image/x-icon">
+    <link id="theme-style" rel="stylesheet" href="styles/light.css" onload="document.body.style.visibility='visible'">
+    <link rel=" icon" href="/assets/images/favicon.ico" type="image/x-icon">
 </head>
 
 <body>
