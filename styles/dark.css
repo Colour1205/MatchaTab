@@ -1,12 +1,3 @@
-/* ===================
-   0) DISABLE on-load animation
-   =================== */
-.no-anim .background-wrapper,
-.no-anim .information-wrapper,
-.no-anim .settings-panel {
-    transition: none !important;
-}
-
 /* Base styles - same structure as light theme but with dark colors */
 :root {
     --dark-bg-overlay: rgba(15, 15, 20, 0.8);
