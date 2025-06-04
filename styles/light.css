@@ -50,8 +50,6 @@ body {
 
 .information-wrapper {
     position: absolute;
-    left: 50%;
-    transform: translate(-50%, 0);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -498,7 +496,7 @@ body {
 
 
 .information-wrapper.scaled {
-    transform: translate(-50%, 0) scale(0.93);
+    transform: scale(0.93);
 }
 
 .background-wrapper.scaled {
