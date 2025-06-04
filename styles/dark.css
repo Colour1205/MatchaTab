@@ -1,3 +1,12 @@
+/* ===================
+   0) DISABLE on-load animation
+   =================== */
+.no-anim .background-wrapper,
+.no-anim .information-wrapper,
+.no-anim .settings-panel {
+    transition: none !important;
+}
+
 /* Base styles - same structure as light theme but with dark colors */
 :root {
     --dark-bg-overlay: rgba(15, 15, 20, 0.8);
@@ -27,11 +36,13 @@ body {
     color: var(--dark-text-primary);
 }
 
+
+
 .background {
     position: fixed;
     width: 100vw;
     height: 100vh;
-    background: url('../assets/images/background-image.jpg') no-repeat center center fixed;
+    background: url('../assets/images/background-image-3.jpg') no-repeat center center fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

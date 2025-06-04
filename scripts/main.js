@@ -659,3 +659,8 @@ setThemeBySystem();
 
 // Listen for changes in system theme
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setThemeBySystem);
+
+// Remove no-anim class after page load to enable animations
+window.addEventListener('load', () => {
+    document.body.classList.remove('no-anim');
+});
