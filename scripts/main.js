@@ -650,12 +650,8 @@ wallpaperFileInput.addEventListener('change', function () {
 const themeLink = document.getElementById('theme-style');
 
 function setThemeBySystem() {
-    document.body.style.visibility = 'hidden';
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     themeLink.href = prefersDark ? 'styles/dark.css' : 'styles/light.css';
-    themeLink.onload = () => {
-        document.body.style.visibility = 'visible';
-    };
 }
 
 // Initial check

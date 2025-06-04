@@ -9,6 +9,7 @@ body {
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    opacity: 1;
 }
 
 
@@ -138,15 +139,14 @@ body {
     padding-bottom: 7px;
     margin-right: 10px;
     border: none;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(212, 212, 212, 0.6);
     border-radius: 13px;
     color: rgba(110, 110, 110, 0.818);
     font-weight: bold;
     cursor: pointer;
-    transition-property: all;
+    transition-property: box-shadow, transform;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
-    flex-shrink: 0;
 }
 
 #send-button {
@@ -186,9 +186,9 @@ body {
 
 #toggle-ai.active {
     background: linear-gradient(135deg, #e286fc77, #5451f766, hsla(0, 100%, 73%, 0.479));
-    color: rgb(255, 255, 255);
     box-shadow: 0 0 20px rgba(164, 144, 255, 0.795);
     transform: scale(1.2);
+    color: white;
 }
 
 .searchbar-container {

@@ -23,8 +23,8 @@ body {
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    background: #0a0a12;
     color: var(--dark-text-primary);
+    opacity: 1;
 }
 
 
@@ -160,10 +160,9 @@ body {
     color: var(--dark-text-secondary);
     font-weight: bold;
     cursor: pointer;
-    transition-property: all;
+    transition-property: box-shadow, transform;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
-    flex-shrink: 0;
 }
 
 #send-button {
@@ -206,9 +205,9 @@ body {
             rgba(180, 100, 220, 0.5),
             rgba(100, 120, 255, 0.5),
             rgba(255, 120, 120, 0.5));
-    color: white;
     box-shadow: 0 0 20px rgba(125, 140, 255, 0.5);
     transform: scale(1.2);
+    color: white;
 }
 
 .searchbar-container {
