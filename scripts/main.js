@@ -427,7 +427,6 @@ async function fetchYahooQuote(symbol) {
 async function updateStockPricesYahoo() {
     for (const { symbol, elemId } of STOCK_SYMBOLS) {
         const priceElem = document.querySelector(`#${elemId} .stock-price`);
-        priceElem.textContent = "…";
         try {
             const result = await fetchYahooQuote(symbol);
             if (result) {
@@ -444,7 +443,7 @@ async function updateStockPricesYahoo() {
     }
 }
 updateStockPricesYahoo();
-setInterval(updateStockPricesYahoo, 60000);
+setInterval(updateStockPricesYahoo, 5000);
 
 
 /* news section */
