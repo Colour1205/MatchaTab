@@ -70,7 +70,7 @@ function sendAction() {
 
     if (aiMode) {
         const chatGPTUrl = `https://chat.openai.com/?model=gpt-4&prompt=${encodeURIComponent(query)}`;
-        window.open(chatGPTUrl, "_blank");
+        window.location.assign(chatGPTUrl);
     } else {
 
         // Regex to detect if input looks like a URL
@@ -81,11 +81,11 @@ function sendAction() {
             const url = query.startsWith("http://") || query.startsWith("https://")
                 ? query
                 : "http://" + query;
-            window.open(url, "_blank");
+            window.location.assign(url);
         } else {
             // Otherwise search with Bing
             const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
-            window.open(bingUrl, "_blank");
+            window.location.assign(bingUrl);
         }
     }
 }
@@ -200,7 +200,7 @@ function createQuickLinkElement(link, idx) {
     // Go to link on click
     div.addEventListener('click', e => {
         if (!div.classList.contains('show-context')) {
-            window.open(link.url, '_blank');
+            window.location.assign(link.url);
         }
     });
 
@@ -399,8 +399,31 @@ window.addEventListener('resize', renderQuickLinks);
 const STOCK_SYMBOLS = [
     { symbol: 'AAPL', elemId: 'stock-aapl', label: 'AAPL' },
     { symbol: 'TSLA', elemId: 'stock-tsla', label: 'TSLA' },
-    { symbol: 'SPY', elemId: 'stock-spy', label: 'S&P 500' }
+    { symbol: 'SPY', elemId: 'stock-spy', label: 'S&P 500' },
+    { symbol: 'GOOGL', elemId: 'stock-googl', label: 'GOOGL' },
+    { symbol: 'NVDA', elemId: 'stock-nvda', label: 'NVDA' },
+    { symbol: 'META', elemId: 'stock-meta', label: 'META' },
+    { symbol: 'btc-usd', elemId: 'stock-btc', label: 'BTC/USD' },
 ];
+
+document.addEventListener("DOMContentLoaded", function () {
+    const stockSection = document.getElementById('stock-section');
+    if (!stockSection) return;
+
+    STOCK_SYMBOLS.forEach(stock => {
+        const card = document.createElement('div');
+        card.className = 'stock-card';
+        card.id = stock.elemId;
+
+        card.innerHTML = `
+      <div class="stock-ticker">${stock.label}</div>
+      <div class="stock-price"></div>
+    `;
+        stockSection.appendChild(card);
+    });
+
+    updateStockPricesYahoo(); // initial fetch after DOM load
+});
 
 // Helper function to fetch price from Yahoo Finance
 async function fetchYahooQuote(symbol) {
@@ -423,27 +446,30 @@ async function fetchYahooQuote(symbol) {
     }
 }
 
-// Update all stock cards with latest prices from Yahoo
+// Update all stock cards with latest prices from Yahoo (fetch in parallel)
 async function updateStockPricesYahoo() {
-    for (const { symbol, elemId } of STOCK_SYMBOLS) {
-        const priceElem = document.querySelector(`#${elemId} .stock-price`);
-        try {
-            const result = await fetchYahooQuote(symbol);
-            if (result) {
-                const { price, percentChange } = result;
-                let color = percentChange > 0 ? "#16b67b" : percentChange < 0 ? "#e65c54" : "#444";
-                let sign = percentChange > 0 ? "+" : "";
-                priceElem.innerHTML = `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
-            } else {
+    await Promise.all(
+        STOCK_SYMBOLS.map(async ({ symbol, elemId }) => {
+            const priceElem = document.querySelector(`#${elemId} .stock-price`);
+            try {
+                const result = await fetchYahooQuote(symbol);
+                if (result) {
+                    const { price, percentChange } = result;
+                    let color = percentChange > 0 ? "#3E9D45" : percentChange < 0 ? "#CA5C5C" : "#444";
+                    let sign = percentChange > 0 ? "+" : "";
+                    priceElem.innerHTML = `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+                } else {
+                    priceElem.textContent = "—";
+                }
+            } catch {
                 priceElem.textContent = "—";
             }
-        } catch {
-            priceElem.textContent = "—";
-        }
-    }
+        })
+    );
 }
-updateStockPricesYahoo();
-setInterval(updateStockPricesYahoo, 5000);
+
+// Refresh prices every 60 seconds
+setInterval(updateStockPricesYahoo, 60000);
 
 
 /* news section */
@@ -635,14 +661,61 @@ wallpaperBtn.addEventListener('click', () => {
 wallpaperFileInput.addEventListener('change', function () {
     const file = this.files && this.files[0];
     if (!file) return;
+
+    const img = new Image();
     const reader = new FileReader();
+
     reader.onload = function (e) {
-        const dataUrl = e.target.result;
+        img.src = e.target.result;
+    };
+
+    img.onload = function () {
+        const MAX_WIDTH = window.innerWidth * window.devicePixelRatio;
+        const MAX_HEIGHT = window.innerHeight * window.devicePixelRatio;
+        let width = img.width;
+        let height = img.height;
+
+        // Maintain aspect ratio
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+            const aspectRatio = width / height;
+            if (width > height) {
+                width = MAX_WIDTH;
+                height = Math.round(MAX_WIDTH / aspectRatio);
+            } else {
+                height = MAX_HEIGHT;
+                width = Math.round(MAX_HEIGHT * aspectRatio);
+            }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Try JPEG first (compressed)
+        let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        let sizeMB = (dataUrl.length * 2) / 1024 / 1024;
+        console.log(`JPEG size: ${sizeMB.toFixed(2)} MB`);
+
+        if (sizeMB > 2) {
+            // Try PNG fallback (may be larger or smaller depending on image)
+            dataUrl = canvas.toDataURL('image/png');
+            sizeMB = (dataUrl.length * 2) / 1024 / 1024;
+            console.log(`PNG fallback size: ${sizeMB.toFixed(2)} MB`);
+        }
+
+        if (sizeMB > 2) {
+            alert('Image size too large, might not be cached properly');
+        }
+
         setBackgroundImage(dataUrl);
         localStorage.setItem(WALLPAPER_KEY, dataUrl);
     };
+
     reader.readAsDataURL(file);
 });
+
 
 /* light dark theme switch */
 // Get the link element
