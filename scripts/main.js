@@ -474,7 +474,7 @@ setInterval(updateStockPricesYahoo, 60000);
 
 /* news section */
 
-const GNEWS_API_KEY = 'b5e186a46d4cb2c489f5671c639fc1b8';
+const GNEWS_API_KEY = '83293af08a175181581c7787d633674c';
 const NEWS_CACHE_KEY = 'news_cache_gnews_v1';
 const NEWS_CACHE_TIME = 12 * 60 * 60 * 1000; // 12 hours in ms
 
