@@ -607,6 +607,38 @@ body {
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
 
+.settings-row{
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px;
+}
+
+/* range slider in dark: same width, better accent for thumb/track */
+.settings.slider {
+    width: 150px;
+    accent-color: #7E79FF; /* brand-ish purple for dark mode */
+}
+
+/* native select styled for dark glass */
+select {
+    width: 150px;
+    background: rgba(18, 20, 30, 0.60);        /* darker fill */
+    color: #E6EAFF;                             /* readable text */
+    padding: 10px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+}
+
+/* keep dropdown list dark on some browsers */
+select option {
+    background: #141827;
+    color: #E6EAFF;
+}
+
+
 /* responsive styles */
 @media (max-width: 700px) {
     #quick-links-section {

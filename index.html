@@ -75,9 +75,17 @@
             </button>
             <button id="wallpaper-button">Select Wallpaper</button>
             <input type="file" id="wallpaper-file-input" accept="image/*" style="display:none" />
-            <label for="blur-slider" style="display:block;margin-top:1em;">Background Blur: <span
-                    id="blur-value">0</span>px</label>
-            <input type="range" id="blur-slider" min="0" max="50" value="0" step="1" style="width:100%;">
+            <div class="settings-row">
+                <label for="blur-slider">Background Blur</label>
+                <input type="range" id="blur-slider" min="0" max="50" value="0" step="1" class="settings slider">
+            </div>
+            <div class="settings-row">
+                <label for="search-engine">Search Engine</label>
+                <select id="search-engine" name="engine">
+                    <option value="https://www.bing.com/search?q=" class="option">Bing</option>
+                    <option value="https://www.google.com/search?q=" class="option">Google</option>
+                </select>
+            </div>
         </div>
     </div>
 
