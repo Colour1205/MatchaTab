@@ -1,33 +1,3 @@
-// --- Background Blur Slider ---
-const BLUR_KEY = 'userBgBlurV1';
-const blurSlider = document.getElementById('blur-slider');
-const blurValueLabel = document.getElementById('blur-value');
-
-function setBackgroundBlur(px) {
-    const bgElem = document.querySelector('.background');
-    if (bgElem) {
-        bgElem.style.filter = `blur(${px}px)`;
-    }
-}
-
-// On page load, set blur from storage or default
-let storedBlur = parseInt(localStorage.getItem(BLUR_KEY), 10);
-if (isNaN(storedBlur)) storedBlur = 0;
-setBackgroundBlur(storedBlur);
-if (blurSlider) {
-    blurSlider.value = storedBlur;
-    blurValueLabel.textContent = storedBlur;
-}
-
-if (blurSlider) {
-    blurSlider.addEventListener('input', function () {
-        const val = parseInt(this.value, 10);
-        setBackgroundBlur(val);
-        blurValueLabel.textContent = val;
-        localStorage.setItem(BLUR_KEY, val);
-    });
-}
-
 function updateClock() {
     const now = new Date();
     const time = now.toLocaleTimeString([], {
@@ -83,9 +53,8 @@ function sendAction() {
                 : "http://" + query;
             window.location.assign(url);
         } else {
-            // Otherwise search with Bing
-            const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
-            window.location.assign(bingUrl);
+            // Otherwise search with default engine
+            window.location.assign(getSearchUrl(query));
         }
     }
 }
@@ -578,6 +547,56 @@ stockSection.addEventListener('wheel', function (e) {
     }
     // If horizontal wheel, let browser handle it natively!
 }, { passive: false });
+
+
+/* ---- SETTINGS SECTION ---- */
+
+// --- Background Blur Slider ---
+const BLUR_KEY = 'userBgBlurV1';
+const blurSlider = document.getElementById('blur-slider');
+const blurValueLabel = document.getElementById('blur-value');
+
+function setBackgroundBlur(px) {
+    const bgElem = document.querySelector('.background');
+    if (bgElem) {
+        bgElem.style.filter = `blur(${px}px)`;
+    }
+}
+
+// On page load, set blur from storage or default
+let storedBlur = parseInt(localStorage.getItem(BLUR_KEY), 10);
+if (isNaN(storedBlur)) storedBlur = 0;
+setBackgroundBlur(storedBlur);
+if (blurSlider) {
+    blurSlider.value = storedBlur;
+}
+
+if (blurSlider) {
+    blurSlider.addEventListener('input', function () {
+        const val = 50 * Math.pow(parseInt(this.value, 10) / blurSlider.max, 2);
+
+        setBackgroundBlur(val);
+        localStorage.setItem(BLUR_KEY, val);
+    });
+}
+
+// search engine selector
+const search_engine_key = "search"
+const search_engine_select = document.getElementById("search-engine");
+let default_engine = localStorage.getItem(search_engine_key)
+if (!default_engine) default_engine = "https://www.bing.com/search?q="
+search_engine_select.value = default_engine
+
+search_engine_select.addEventListener("change", function () {
+    default_engine = this.value
+    localStorage.setItem(search_engine_key, this.value)
+});
+
+function getSearchUrl(query){
+    let url = default_engine + `${encodeURIComponent(query)}`
+    return url
+}
+
 
 /* settings button */
 
