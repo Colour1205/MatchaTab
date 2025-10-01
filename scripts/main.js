@@ -428,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // Helper function to fetch price from Yahoo Finance
 async function fetchYahooQuote(symbol) {
     try {
-        const url = `https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?symbol=${symbol}`;
+        const url = `https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?type=stock&symbol=${symbol}`;
         const res = await fetch(url);
         const data = await res.json();
         // Defensive checks for data
@@ -468,22 +468,13 @@ async function updateStockPricesYahoo() {
     );
 }
 
-// Refresh prices every 60 seconds
-setInterval(updateStockPricesYahoo, 60000);
+// Refresh prices every 10 seconds
+setInterval(updateStockPricesYahoo, 10000);
 
 
 /* news section */
-
-const GNEWS_API_KEY = '83293af08a175181581c7787d633674c';
-const NEWS_CACHE_KEY = 'news_cache_gnews_v1';
 const NEWS_CACHE_TIME = 12 * 60 * 60 * 1000; // 12 hours in ms
-
-async function fetchNewsFromGNews() {
-    const url = `https://gnews.io/api/v4/top-headlines?token=${GNEWS_API_KEY}&lang=en&country=us&max=10`;
-    const response = await fetch(url);
-    const data = await response.json();
-    return data;
-}
+const NEWS_CACHE_KEY = 'GNEWS_CACHE'
 
 function cacheNews(data) {
     localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify({
@@ -516,10 +507,10 @@ async function loadNews() {
 
     if (!data) {
         try {
-            data = await fetchNewsFromGNews();
-            if (data && data.articles && Array.isArray(data.articles)) {
-                cacheNews(data);
-            }
+            const URL = 'https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?type=news&max=20'
+            const res = await fetch(URL)
+            data = await res.json();
+            cacheNews(data);
         } catch (err) {
             newsSection.innerHTML = '<div class="news-card"><div class="news-title">Failed to load news.</div></div>';
             return;
