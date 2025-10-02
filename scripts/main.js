@@ -391,13 +391,13 @@ document.addEventListener("DOMContentLoaded", function () {
         stockSection.appendChild(card);
     });
 
-    updateStockPricesYahoo(); // initial fetch after DOM load
+    updateStockPricesYahoo(); // initial fetch after DOM loadmyproxy.uaena.io
 });
 
 // Helper function to fetch price from Yahoo Finance
 async function fetchYahooQuote(symbol) {
     try {
-        const url = `https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?type=stock&symbol=${symbol}`;
+        const url = `https://myproxy.uaena.io/api/Node?type=stock&symbol=${symbol}`;
         const res = await fetch(url);
         const data = await res.json();
         // Defensive checks for data
@@ -476,7 +476,7 @@ async function loadNews() {
 
     if (!data) {
         try {
-            const URL = 'https://yahoo-proxy-colour1205s-projects.vercel.app/api/yahoo?type=news&max=20'
+            const URL = 'https://myproxy.uaena.io/api/Node?type=news&max=20'
             const res = await fetch(URL)
             data = await res.json();
             cacheNews(data);
