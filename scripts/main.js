@@ -397,7 +397,7 @@ document.addEventListener("DOMContentLoaded", function () {
 // Helper function to fetch price from Yahoo Finance
 async function fetchYahooQuote(symbol) {
     try {
-        const url = `https://myproxy.uaena.io/api/Node?type=stock&symbol=${symbol}`;
+        const url = `https://myproxy.uaena.io/api?type=stock&symbol=${symbol}`;
         const res = await fetch(url);
         const data = await res.json();
         // Defensive checks for data
@@ -476,7 +476,7 @@ async function loadNews() {
 
     if (!data) {
         try {
-            const URL = 'https://myproxy.uaena.io/api/Node?type=news&max=20'
+            const URL = 'https://myproxy.uaena.io/api?type=news&max=20'
             const res = await fetch(URL)
             data = await res.json();
             cacheNews(data);
