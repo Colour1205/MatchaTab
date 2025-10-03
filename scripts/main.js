@@ -446,31 +446,6 @@ window.addEventListener('DOMContentLoaded', loadNews);
 // Refresh news every 12 hours (refreshes the cache and UI)
 setInterval(loadNews, NEWS_CACHE_TIME);
 
-// horizontal scroll for stock section
-const stockSection = document.getElementById('stock-section');
-
-stockSection.addEventListener('wheel', function (e) {
-    // Only handle vertical wheel events
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        // Figure out if we can scroll further
-        const atStart = stockSection.scrollLeft === 0;
-        const atEnd = Math.ceil(stockSection.scrollLeft + stockSection.clientWidth) >= stockSection.scrollWidth;
-
-        // User is scrolling left (negative delta)
-        if (e.deltaY < 0 && !atStart) {
-            e.preventDefault();
-            stockSection.scrollLeft += e.deltaY;
-        }
-        // User is scrolling right (positive delta)
-        else if (e.deltaY > 0 && !atEnd) {
-            e.preventDefault();
-            stockSection.scrollLeft += e.deltaY;
-        }
-        // At edge: do nothing, allow normal page scrolling
-    }
-    // If horizontal wheel, let browser handle it natively!
-}, { passive: false });
-
 
 /* ---- SETTINGS SECTION ---- */
 
