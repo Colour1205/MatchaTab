@@ -1,4 +1,4 @@
-:root{
+:root {
     --backdrop-blur: blur(5px);
     --backdrop-color: rgba(255, 255, 255, 0.5);
 }
@@ -251,7 +251,7 @@ body {
     position: relative;
     user-select: none;
     backdrop-filter: var(--backdrop-blur);
-    
+
 }
 
 .quick-link:hover {
@@ -343,7 +343,7 @@ body {
 }
 
 .stock-card {
-    height: 70px;
+    height: 83px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -351,18 +351,12 @@ body {
     padding: 12px 10px;
     background: var(--backdrop-color);
     border-radius: 16px;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
     font-family: inherit;
     font-weight: 500;
-    transition: box-shadow 0.18s;
     backdrop-filter: var(--backdrop-blur);
-    min-width: 135px;
-    width: 135px;
-    max-width: 135px;
-}
-
-.stock-card:hover {
-    box-shadow: 0 3px 16px rgba(85, 76, 186, 0.10);
+    min-width: 155px;
+    width: 155px;
+    max-width: 155px;
 }
 
 .stock-ticker {
@@ -379,6 +373,129 @@ body {
     font-size: 1.13rem;
     font-weight: 700;
     color: #1a2346;
+}
+
+.stock.container {
+    width: 60vw;
+    height: 60vh;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    z-index: 0;
+    opacity: 0;
+    background: rgba(17, 18, 39, 0.801);
+    backdrop-filter: blur(7px);
+    border-radius: 25px;
+    padding: 20px;
+    overflow: hidden;
+    color: white;
+}
+
+#stock-chart {
+    font-size: 11px;
+    width: 100%;
+    height: 100%;
+}
+
+.stock-container-inner {
+    display: flex;
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    height: 60px;
+    width: 100%;
+    padding: 5px 10px;
+    overflow-y: hidden;
+    overflow-x: visible;
+    scrollbar-width: none;
+}
+
+.stock-container-inner::-webkit-scrollbar {
+    display: none;
+}
+
+.stock-container-inner.button {
+    background: rgba(117, 117, 117, 0.226);
+    width: 50px;
+    min-width: 50px;
+    height: 50px;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    margin: 5px;
+    border-radius: 15px;
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    color: white;
+}
+
+.stock-container-inner.button.active {
+    background: rgba(204, 204, 255, 0.77);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+    color: black;
+}
+
+#stock-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    transition: background, 0.3s ease;
+}
+
+#stock-background.show {
+    z-index: 2;
+    background: rgba(21, 21, 21, 0.219);
+}
+
+.button {
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    transition: all 0.2s ease
+}
+
+.button:hover {
+    background: rgba(255, 255, 255, 0.644);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+
+.button:active {
+    transform: scale(0.99);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.close.button {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    width: 35px;
+    height: 35px;
+    background: rgba(117, 117, 117, 0.226);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.close.button:hover {
+    background: rgba(204, 204, 255, 0.77);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+}
+
+.close.button:active{
+    transform: scale(0.99);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+#stock-chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
 /* news section */
@@ -598,7 +715,7 @@ body {
     transform: scale(0.75);
 }
 
-.settings-row{
+.settings-row {
     display: flex;
     justify-content: space-between;
     width: 100%;

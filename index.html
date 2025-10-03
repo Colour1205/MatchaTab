@@ -89,7 +89,44 @@
         </div>
     </div>
 
+    <!-- expandable cards -->
+    <div class="stock container">
+        <button class="close button" id="stock-close-button">
+            <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g id="Menu / Close_MD">
+                    <path id="Vector" d="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" stroke="#ffff" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </g>
+            </svg>
+        </button>
+        <h3 id="stock-name"></h3>
+        <div id="stock-chart-container">
+            <div id="stock-chart"></div>
+        </div>
+        <div class="stock-container-inner">
+            <p>Interval</p>
+            <button class="stock-container-inner button interval" data-target="15m">15m</button>
+            <button class="stock-container-inner button interval" data-target="1h">1h</button>
+            <button class="stock-container-inner button interval" data-target="1d">1d</button>
+            <button class="stock-container-inner button interval" data-target="1wk">1wk</button>
+            <button class="stock-container-inner button interval" data-target="1mo">1mo</button>
+            <p>Range</p>
+            <button class="stock-container-inner button range" data-target="1d">1d</button>
+            <button class="stock-container-inner button range" data-target="1wk">1wk</button>
+            <button class="stock-container-inner button range" data-target="1mo">1mo</button>
+            <button class="stock-container-inner button range" data-target="6mo">6mo</button>
+            <button class="stock-container-inner button range" data-target="1y">1y</button>
+            <button class="stock-container-inner button range" data-target="5y">5y</button>
+            <button class="stock-container-inner button range" data-target="max">max</button>
+        </div>
+    </div>
+    <div id="stock-background"></div>
+
+    <script src="https://www.amcharts.com/lib/3/amcharts.js"></script>
+    <script src="https://www.amcharts.com/lib/3/serial.js"></script>
+    <script src="https://www.amcharts.com/lib/3/themes/light.js"></script>
     <script src="scripts/main.js"></script>
+    <script src="scripts/stock.js"></script>
 </body>
 
 </html>
