@@ -328,6 +328,19 @@ body {
 }
 
 /* stock section */
+
+#stock-chart {
+    width: 80vw;
+    height: 500px;
+    display: fixed;
+    font-size: 11px;
+    background: var(--backdrop-color);
+    backdrop-filter: var(--backdrop-blur);
+    border-radius: 25px;
+    z-index: 0;
+    opacity: 0;
+}
+
 .stock-section-wrap {
     justify-content: center;
 }
@@ -607,7 +620,7 @@ body {
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
 
-.settings-row{
+.settings-row {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -617,14 +630,17 @@ body {
 /* range slider in dark: same width, better accent for thumb/track */
 .settings.slider {
     width: 150px;
-    accent-color: #7E79FF; /* brand-ish purple for dark mode */
+    accent-color: #7E79FF;
+    /* brand-ish purple for dark mode */
 }
 
 /* native select styled for dark glass */
 select {
     width: 150px;
-    background: rgba(18, 20, 30, 0.60);        /* darker fill */
-    color: #E6EAFF;                             /* readable text */
+    background: rgba(18, 20, 30, 0.60);
+    /* darker fill */
+    color: #E6EAFF;
+    /* readable text */
     padding: 10px;
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.12);
