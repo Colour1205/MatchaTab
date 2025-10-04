@@ -10,6 +10,8 @@
     --dark-shadow: rgba(0, 0, 0, 0.35);
     --dark-divider: rgba(255, 255, 255, 0.1);
     --dark-context-bg: rgba(40, 40, 55, 0.85);
+    --backdrop-blur: blur(3px);
+    --backdrop-color: rgba(40, 40, 50, 0.6);
 }
 
 html,
@@ -28,8 +30,6 @@ body {
     width: 100vw;
     background: none;
 }
-
-
 
 .background {
     position: fixed;
@@ -108,12 +108,12 @@ body {
     align-items: center;
     border-radius: 22px;
     box-shadow: 0 0 20px var(--dark-shadow);
-    background: rgba(40, 40, 50, 0.6);
+    background: var(--backdrop-color);
     overflow: hidden;
     width: 100%;
     flex-wrap: wrap;
     height: 60px;
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
     border: 1px solid var(--dark-divider);
 }
 
@@ -173,7 +173,7 @@ body {
     display: flex;
     padding: 14px;
     border: none;
-    background: rgba(50, 50, 65, 0.6);
+    background: var(--backdrop-color);
     border-radius: 20px;
     cursor: pointer;
     flex-shrink: 0;
@@ -183,7 +183,7 @@ body {
     transition-property: transform, box-shadow;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
 }
 
 #send-button:hover {
@@ -261,7 +261,7 @@ body {
     transition: background 0.2s, box-shadow 0.2s;
     position: relative;
     user-select: none;
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
     border: 1px solid var(--dark-divider);
 }
 
@@ -295,7 +295,7 @@ body {
 
 .quick-link-context {
     background: var(--dark-context-bg);
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
     border-radius: 17px;
     box-shadow: 0 2px 16px var(--dark-shadow);
     display: none;
@@ -328,19 +328,6 @@ body {
 }
 
 /* stock section */
-
-#stock-chart {
-    width: 80vw;
-    height: 500px;
-    display: fixed;
-    font-size: 11px;
-    background: var(--backdrop-color);
-    backdrop-filter: var(--backdrop-blur);
-    border-radius: 25px;
-    z-index: 0;
-    opacity: 0;
-}
-
 .stock-section-wrap {
     justify-content: center;
 }
@@ -368,7 +355,7 @@ body {
 }
 
 .stock-card {
-    height: 70px;
+    height: 83px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -376,19 +363,13 @@ body {
     padding: 12px 10px;
     background: var(--dark-card-bg);
     border-radius: 16px;
-    box-shadow: 0 1px 8px var(--dark-shadow);
     font-family: inherit;
     font-weight: 500;
-    transition: box-shadow 0.18s;
-    backdrop-filter: blur(20px);
-    min-width: 135px;
-    width: 135px;
-    max-width: 135px;
+    backdrop-filter: var(--backdrop-blur);
+    min-width: 155px;
+    width: 155px;
+    max-width: 155px;
     border: 1px solid var(--dark-divider);
-}
-
-.stock-card:hover {
-    box-shadow: 0 3px 16px rgba(125, 140, 255, 0.15);
 }
 
 .stock-ticker {
@@ -407,12 +388,135 @@ body {
     color: var(--dark-text-primary);
 }
 
+.stock.container {
+    width: 60vw;
+    height: 60vh;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    z-index: 0;
+    opacity: 0;
+    background: rgba(17, 18, 39, 0.801);
+    backdrop-filter: blur(7px);
+    border-radius: 25px;
+    padding: 20px;
+    overflow: hidden;
+    color: white;
+}
+
+#stock-chart {
+    font-size: 11px;
+    width: 100%;
+    height: 100%;
+}
+
+.stock-container-inner {
+    display: flex;
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    height: 60px;
+    width: 100%;
+    padding: 5px 10px;
+    overflow-y: hidden;
+    overflow-x: visible;
+    scrollbar-width: none;
+}
+
+.stock-container-inner::-webkit-scrollbar {
+    display: none;
+}
+
+.stock-container-inner.button {
+    background: rgba(117, 117, 117, 0.226);
+    width: 50px;
+    min-width: 50px;
+    height: 50px;
+    min-height: 50px;
+    align-items: center;
+    justify-content: center;
+    margin: 5px;
+    border-radius: 15px;
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    color: white;
+}
+
+.stock-container-inner.button.active {
+    background: rgba(204, 204, 255, 0.77);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+    color: black;
+}
+
+#stock-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -2;
+    transition: background, 0.3s ease;
+}
+
+#stock-background.show {
+    z-index: 2;
+    background: rgba(21, 21, 21, 0.219);
+}
+
+.button {
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(60, 60, 77, 0.459);
+    transition: all 0.2s ease
+}
+
+.button:hover {
+    background: rgba(53, 54, 76, 0.442);
+    box-shadow: 0 0 12px rgba(77, 72, 107, 0.366);
+    transform: scale(1.05);
+}
+
+.button:active {
+    transform: scale(0.99);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.close.button {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    width: 35px;
+    height: 35px;
+    background: rgba(117, 117, 117, 0.226);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.close.button:hover {
+    background: rgba(204, 204, 255, 0.77);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    transform: scale(1.1);
+}
+
+.close.button:active {
+    transform: scale(0.99);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+#stock-chart-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
 /* news section */
 .news-section {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    margin-top: 40px;
+    margin-top: 20%;
     width: 88%;
     max-width: 500px;
     padding: 15px 12px;
@@ -432,7 +536,7 @@ body {
     transition-duration: 0.2s;
     transition-timing-function: ease;
     margin-bottom: 4px;
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
     border: 1px solid var(--dark-divider);
 }
 
@@ -478,20 +582,28 @@ body {
     right: 20px;
     width: 35px;
     height: 35px;
-    background: rgba(50, 50, 65, 0.6);
-    backdrop-filter: blur(10px);
+    background: var(--backdrop-color);
+    backdrop-filter: var(--backdrop-blur);
     border-radius: 14px;
     border: none;
     cursor: pointer;
     transition-property: box-shadow, transform;
     transition-duration: 0.2s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
-    box-shadow: 0 0 10px var(--dark-shadow);
+    justify-content: center;
+    align-items: center;
 }
 
 #settings-button:hover {
     box-shadow: 0 3px 12px rgba(125, 140, 255, 0.2);
     transform: scale(1.1);
+}
+
+#settings-button svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--dark-text-primary);
+    color: var(--dark-text-primary);
 }
 
 #settings-button:active {
@@ -520,7 +632,7 @@ body {
 #settings-container.show {
     opacity: 1;
     pointer-events: auto;
-    backdrop-filter: blur(20px);
+    backdrop-filter: var(--backdrop-blur);
     transition:
         opacity 0s cubic-bezier(0, .98, .49, 1) 0s,
         backdrop-filter 0.9s cubic-bezier(0, .98, .49, 1) 0s;
@@ -562,6 +674,7 @@ body {
     overflow-x: hidden;
     scrollbar-width: none;
     border: 1px solid var(--dark-divider);
+    backdrop-filter: var(--backdrop-blur);
 }
 
 .settings-panel::-webkit-scrollbar {
@@ -620,6 +733,12 @@ body {
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
 }
 
+#close-settings-button svg {
+    transform: scale(0.75);
+    stroke: var(--dark-text-primary);
+    color: var(--dark-text-primary);
+}
+
 .settings-row {
     display: flex;
     justify-content: space-between;
@@ -627,33 +746,25 @@ body {
     padding: 10px;
 }
 
-/* range slider in dark: same width, better accent for thumb/track */
 .settings.slider {
     width: 150px;
     accent-color: #7E79FF;
-    /* brand-ish purple for dark mode */
 }
 
-/* native select styled for dark glass */
 select {
     width: 150px;
     background: rgba(18, 20, 30, 0.60);
-    /* darker fill */
     color: #E6EAFF;
-    /* readable text */
     padding: 10px;
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: var(--backdrop-blur);
-    -webkit-backdrop-filter: var(--backdrop-blur);
 }
 
-/* keep dropdown list dark on some browsers */
 select option {
     background: #141827;
     color: #E6EAFF;
 }
-
 
 /* responsive styles */
 @media (max-width: 700px) {
