@@ -55,19 +55,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const interval_buttons = document.querySelectorAll(".stock-container-inner.button.interval");
     interval_buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             interval = btn.dataset.target;
-            setActive(interval_buttons, interval)
-            if (currSymbol) makeChart(currSymbol);
+            const ok = await makeChart(currSymbol)
+            if (ok) setActive(interval_buttons, interval);
         });
     })
 
     const range_buttons = document.querySelectorAll(".stock-container-inner.button.range");
     range_buttons.forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             range = btn.dataset.target;
-            setActive(range_buttons, range)
-            if (currSymbol) makeChart(currSymbol);
+            const ok = await makeChart(currSymbol)
+            if (ok) setActive(range_buttons, range);
         });
     })
 
@@ -215,12 +215,13 @@ function inRegularSession(tSec, gmtoffsetSec, isCrypto = false) {
 }
 
 
-
+// returns false if unsuccessful
+// true otherwise
 async function makeChart(symbol) {
 
     //fetch complete stock json for data
     const data = await fetchQuote(symbol, interval, range);
-    if (!data) return;
+    if (!data) return false;
 
 
     const ts = data.timestamp || [];
@@ -300,6 +301,7 @@ async function makeChart(symbol) {
     };
     chart.addListener("rendered", zoom);
     zoom();
+    return true
 }
 
 
