@@ -176,14 +176,21 @@ function createQuickLinkElement(link, idx) {
     return div;
 }
 
-// Unified context menu logic: right-click on quick-link = menu for that link, empty = add menu
-quickLinksSection.addEventListener('contextmenu', function (e) {
+// Global context menu for the entire page
+document.addEventListener('contextmenu', function (e) {
     // Ctrl+RightClick shortcut: always add quick link
     if (e.ctrlKey) {
         e.preventDefault();
         closeAllContexts();
         addQuickLinkPrompt();
         return;
+    }
+
+    // Check if right-click is on an interactive element that should have its own context menu
+    const interactiveElements = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'];
+    if (interactiveElements.includes(e.target.tagName) ||
+        e.target.closest('input, textarea, select, button, a')) {
+        return; // Let the browser handle context menu for form elements and links
     }
 
     closeAllContexts();
@@ -490,7 +497,7 @@ search_engine_select.addEventListener("change", function () {
     localStorage.setItem(search_engine_key, this.value)
 });
 
-function getSearchUrl(query){
+function getSearchUrl(query) {
     let url = default_engine + `${encodeURIComponent(query)}`
     return url
 }
