@@ -329,3 +329,5 @@ stockSection.addEventListener('wheel', function (e) {
     }
     // If horizontal wheel, let browser handle it natively!
 }, { passive: false });
+
+
