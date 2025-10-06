@@ -16,12 +16,18 @@ let aiMode = false;
 const aiButton = document.getElementById("toggle-ai");
 const searchInput = document.getElementById("search-input");
 const sendButton = document.getElementById("send-button");
+const ai_chat = document.getElementById("ai-chat");
+const search_container = document.querySelector(".search-container");
 
 aiButton.addEventListener("click", () => {
     aiMode = !aiMode;
     aiButton.classList.toggle("active", aiMode);
     searchInput.placeholder = aiMode ? "How can I help you?" : "Hi, where to?";
     searchInput.classList.toggle("ai-mode", aiMode);
+    if (search_container.classList.contains("expand"))
+        search_container.classList.remove("expand");
+    if (ai_chat.style.display == "block")
+        ai_chat.style.display = "none";
 });
 
 sendButton.addEventListener("click", () => {
@@ -34,13 +40,23 @@ searchInput.addEventListener("keydown", function (e) {
     }
 });
 
-function sendAction() {
+async function sendAction() {
     const query = searchInput.value.trim();
     if (!query) return;
 
     if (aiMode) {
-        const chatGPTUrl = `https://chat.openai.com/?model=gpt-4&prompt=${encodeURIComponent(query)}`;
-        window.location.assign(chatGPTUrl);
+        ai_chat.style.display = "block";
+        ai_chat.style.textAlign = "center";
+        ai_chat.textContent = "Thinking...";
+        search_container.classList.add("expand");
+        const res = await fetch(`https://myproxy.uaena.io/api?type=ai&input=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        ai_chat.style.textAlign=  "left";
+        ai_chat.textContent = data.output_text;
+        searchInput.value = "";
+        searchInput.placeholder = query;
+        //const chatGPTUrl = `https://chat.openai.com/?model=gpt-4&prompt=${encodeURIComponent(query)}`;
+        //indow.location.assign(chatGPTUrl);
     } else {
 
         // Regex to detect if input looks like a URL
@@ -56,7 +72,11 @@ function sendAction() {
             // Otherwise search with default engine
             window.location.assign(getSearchUrl(query));
         }
+
+        searchInput.value = "";
     }
+
+    searchInput.blur();
 }
 
 // --- QUICK LINKS SECTION ---
