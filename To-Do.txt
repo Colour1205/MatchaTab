@@ -1,5 +1,10 @@
 TODO list
-- implement simultaneous fetching for stocks
 - ability to customize stocks
 - show news on two column for larger screens
-- stock cards when nothing displayed should have a fixed width
+- display equations in AI chat
+- add more search engines
+- customize gpt model used for AI
+- trendlines on stock graph
+- stock graph header line to display quick information
+- customize quick links - upload icon, change name, url
+- full screen quick link expand animation before jumping into the link
