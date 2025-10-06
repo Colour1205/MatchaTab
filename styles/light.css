@@ -1,6 +1,7 @@
 :root {
---backdrop-blur: blur(3px) contrast(1.2) saturate(1.2) brightness(1.1);
+    --backdrop-blur: blur(3px) contrast(1.2) saturate(1.2) brightness(1.1);
     --backdrop-color: rgba(255, 255, 255, 0.4);
+    --border-glass: border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 html,
@@ -83,8 +84,9 @@ body {
     font-size: clamp(5rem, min(13vw, 13vh), 7rem);
     font-weight: 900;
     color: rgba(255, 255, 255, 1);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 4px 20px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 1;
+    
 }
 
 .search-container {
@@ -143,8 +145,8 @@ body {
     padding-top: 7px;
     padding-bottom: 7px;
     margin-right: 10px;
-    border: none;
-    background: rgba(212, 212, 212, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--backdrop-color);
     border-radius: 13px;
     color: #444;
     font-weight: 600;
@@ -218,8 +220,8 @@ body {
     justify-content: center;
     justify-items: center;
     align-items: center;
-    height: 210px;
-    min-height: 210px;
+    height: 220px;
+    min-height: 220px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -328,7 +330,7 @@ body {
     gap: min(2.5vw, 18px);
     margin-top: 9px;
     width: 100vw;
-    max-width: 500px;
+    max-width: 520px;
     padding: 15px 12px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -378,7 +380,7 @@ body {
 
 .stock.container {
     width: 60vw;
-    height: 60vh;
+    height: 70vh;
     position: fixed;
     display: flex;
     flex-direction: column;
@@ -457,7 +459,8 @@ body {
     border: none;
     cursor: pointer;
     box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
-    transition: all 0.2s ease
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .button:hover {
@@ -656,7 +659,6 @@ body {
 
 #wallpaper-button {
     padding: 20px;
-    border: none;
     background: rgba(255, 255, 255, 0.8);
     border-radius: 16px;
     cursor: pointer;
@@ -684,7 +686,6 @@ body {
     width: 40px;
     height: 40px;
     background: rgba(255, 255, 255, 0.634);
-    border: none;
     cursor: pointer;
     border-radius: 50%;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -699,7 +700,7 @@ body {
 
 #close-settings-button:active {
     transform: scale(0.99);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.236);
 }
 
 #close-settings-button svg {
@@ -752,28 +753,13 @@ select {
         border-radius: 0;
         top: 0;
         left: 0;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        padding: 20px 20px 20px 20px;
+        padding: 10px;
         box-sizing: border-box;
     }
 
     .close.button {
         right: max(15px, env(safe-area-inset-right));
         top: max(15px, env(safe-area-inset-top));
-    }
-
-    #stock-chart-container {
-        width: calc(100% - 40px);
-        height: calc(100% - 80px);
-        margin-top: 20px;
-    }
-
-    .stock-container-inner {
-        padding: 10px 5px;
-        height: auto;
-        min-height: 60px;
-        flex-wrap: wrap;
-        justify-content: center;
     }
 }
 
@@ -809,6 +795,15 @@ select {
     .information-wrapper {
         padding-top: 7%;
     }
+
+    /* make inner button smaller */
+    .stock-container-inner.button {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        margin: 3px;
+    }
 }
 
 @media (max-height: 540px) {
@@ -836,27 +831,13 @@ select {
         border-radius: 0;
         top: 0;
         left: 0;
-        padding: 15px 15px 15px 15px;
         box-sizing: border-box;
-    }
-
-    #stock-chart-container {
-        height: calc(100% - 60px);
-        margin-top: 10px;
     }
 
     .stock-container-inner {
         height: 50px;
         min-height: 50px;
         padding: 5px;
-    }
-
-    .stock-container-inner.button {
-        width: 40px;
-        min-width: 40px;
-        height: 40px;
-        min-height: 40px;
-        margin: 3px;
     }
 }
 
@@ -881,23 +862,5 @@ select {
     #quick-links-section {
         height: 95px;
         min-height: 95px;
-    }
-}
-
-@media (max-width: 240px) {
-    .stock.container {
-        padding: 10px 10px 10px 10px;
-    }
-
-    .close.button {
-        right: 10px;
-        top: 10px;
-        width: 30px;
-        height: 30px;
-    }
-
-    #stock-chart-container {
-        width: calc(100% - 20px);
-        height: calc(100% - 50px);
     }
 }
