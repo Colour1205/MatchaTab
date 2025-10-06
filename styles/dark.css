@@ -99,7 +99,6 @@ body {
     color: var(--dark-text-primary);
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     z-index: 1;
-    margin-bottom: 20px;
 }
 
 .search-container {
@@ -234,8 +233,8 @@ body {
     justify-content: center;
     justify-items: center;
     align-items: center;
-    height: 210px;
-    min-height: 210px;
+    height: 220px;
+    min-height: 220px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -341,7 +340,7 @@ body {
     gap: min(2.5vw, 18px);
     margin-top: 9px;
     width: 100vw;
-    max-width: 500px;
+    max-width: 520px;
     padding: 15px 12px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -390,7 +389,7 @@ body {
 
 .stock.container {
     width: 60vw;
-    height: 60vh;
+    height: 70vh;
     position: fixed;
     display: flex;
     flex-direction: column;
@@ -469,7 +468,8 @@ body {
     border: none;
     cursor: pointer;
     box-shadow: 0 0 8px rgba(60, 60, 77, 0.459);
-    transition: all 0.2s ease
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .button:hover {
@@ -688,7 +688,6 @@ body {
 
 #wallpaper-button {
     padding: 20px;
-    border: none;
     background: rgba(60, 65, 100, 0.6);
     border-radius: 16px;
     cursor: pointer;
@@ -716,7 +715,6 @@ body {
     width: 40px;
     height: 40px;
     background: rgba(50, 50, 65, 0.7);
-    border: none;
     cursor: pointer;
     border-radius: 50%;
     box-shadow: 0 0 10px var(--dark-shadow);
@@ -793,10 +791,7 @@ select option {
         border-radius: 0;
         top: 0;
         left: 0;
-        /* Added safe area padding for mobile devices */
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        /* Fallback for browsers that don't support env() */
-        padding: 20px 20px 20px 20px;
+        padding: 10px;
         box-sizing: border-box;
     }
 
@@ -804,22 +799,6 @@ select option {
     .close.button {
         right: max(15px, env(safe-area-inset-right));
         top: max(15px, env(safe-area-inset-top));
-    }
-
-    /* Adjust stock chart container for full screen */
-    #stock-chart-container {
-        width: calc(100% - 40px);
-        height: calc(100% - 80px);
-        margin-top: 20px;
-    }
-
-    /* Adjust stock container inner elements for full screen */
-    .stock-container-inner {
-        padding: 10px 5px;
-        height: auto;
-        min-height: 60px;
-        flex-wrap: wrap;
-        justify-content: center;
     }
 }
 
@@ -855,6 +834,15 @@ select option {
     .information-wrapper {
         padding-top: 7%;
     }
+
+    /* make inner button smaller */
+    .stock-container-inner.button {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        min-height: 40px;
+        margin: 3px;
+    }
 }
 
 @media (max-height: 540px) {
@@ -882,29 +870,13 @@ select option {
         border-radius: 0;
         top: 0;
         left: 0;
-        /* Enhanced padding for very small screens */
-        padding: 15px 15px 15px 15px;
         box-sizing: border-box;
-    }
-
-    /* Additional adjustments for extra small height */
-    #stock-chart-container {
-        height: calc(100% - 60px);
-        margin-top: 10px;
     }
 
     .stock-container-inner {
         height: 50px;
         min-height: 50px;
         padding: 5px;
-    }
-
-    .stock-container-inner.button {
-        width: 40px;
-        min-width: 40px;
-        height: 40px;
-        min-height: 40px;
-        margin: 3px;
     }
 }
 
@@ -929,24 +901,5 @@ select option {
     #quick-links-section {
         height: 95px;
         min-height: 95px;
-    }
-}
-
-/* Additional safety for very small screens */
-@media (max-width: 240px) {
-    .stock.container {
-        padding: 10px 10px 10px 10px;
-    }
-
-    .close.button {
-        right: 10px;
-        top: 10px;
-        width: 30px;
-        height: 30px;
-    }
-
-    #stock-chart-container {
-        width: calc(100% - 20px);
-        height: calc(100% - 50px);
     }
 }
