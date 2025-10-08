@@ -53,6 +53,17 @@ async function sendAction() {
         const data = await res.json();
         ai_chat.style.textAlign = "left";
         ai_chat.textContent = data.output_text;
+        if (window.renderMathInElement) {
+            renderMathInElement(ai_chat, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false },
+                    { left: '\\[', right: '\\]', display: true },
+                    { left: '\\(', right: '\\)', display: false }
+                ],
+                throwOnError: false
+            });
+        }
         searchInput.value = "";
         searchInput.placeholder = query;
         //const chatGPTUrl = `https://chat.openai.com/?model=gpt-4&prompt=${encodeURIComponent(query)}`;

@@ -1,7 +1,6 @@
 TODO list
 - ability to customize stocks
 - show news on two column for larger screens
-- display equations in AI chat
 - add more search engines
 - customize gpt model used for AI
 - trendlines on stock graph
