@@ -111,7 +111,7 @@ body {
     justify-content: center;
     align-items: center;
     border-radius: 22px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     background: var(--backdrop-color);
     overflow: hidden;
     width: 100%;
@@ -263,7 +263,7 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--backdrop-color);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
     position: relative;
     user-select: none;
@@ -846,7 +846,6 @@ select {
 
     .quick-link {
         width: 100%;
-        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.15);
     }
 }
 

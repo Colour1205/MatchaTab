@@ -276,7 +276,7 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--dark-card-bg);
-    box-shadow: 0 0px 8px var(--dark-shadow);
+    box-shadow: 0 1px 8px var(--dark-shadow);
     transition: all 0.3s ease;
     position: relative;
     user-select: none;
