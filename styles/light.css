@@ -810,6 +810,7 @@ select {
     #quick-links-section {
         grid-template-columns: repeat(3, 110px);
         grid-gap: 11px;
+        min-height: 205px;
     }
 
     #stock-section.stock-section {
@@ -839,7 +840,7 @@ select {
     #quick-links-section {
         grid-gap: 8px;
         width: 90%;
-        min-height: 200px;
+        min-height: 205px;
     }
 
     .quick-link {
