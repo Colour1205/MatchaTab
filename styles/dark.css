@@ -276,7 +276,7 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--dark-card-bg);
-    box-shadow: 0 1px 8px var(--dark-shadow);
+    box-shadow: 0 0px 8px var(--dark-shadow);
     transition: all 0.3s ease;
     position: relative;
     user-select: none;
@@ -834,7 +834,7 @@ select option {
     #quick-links-section {
         grid-template-columns: repeat(3, 110px);
         grid-gap: 11px;
-        min-height: 209px;
+        min-height: 210px;
     }
 
     #stock-section.stock-section {
@@ -864,7 +864,7 @@ select option {
     #quick-links-section {
         grid-gap: 8px;
         width: 90%;
-        min-height: 209px;
+        min-height: 205px;
     }
 
     .quick-link {

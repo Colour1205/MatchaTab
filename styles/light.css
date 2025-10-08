@@ -9,7 +9,8 @@
 html,
 body {
     margin: 0;
-    padding: 0;;
+    padding: 0;
+    ;
     height: 100%;
     font-family: 'Segoe UI', sans-serif;
     display: flex;
@@ -262,7 +263,7 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--backdrop-color);
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
     position: relative;
     user-select: none;
@@ -810,7 +811,7 @@ select {
     #quick-links-section {
         grid-template-columns: repeat(3, 110px);
         grid-gap: 11px;
-        min-height: 209px;
+        min-height: 210px;
     }
 
     #stock-section.stock-section {
@@ -840,11 +841,12 @@ select {
     #quick-links-section {
         grid-gap: 8px;
         width: 90%;
-        min-height: 209px;
+        min-height: 205px;
     }
 
     .quick-link {
         width: 100%;
+        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.15);
     }
 }
 
