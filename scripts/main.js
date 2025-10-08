@@ -51,7 +51,7 @@ async function sendAction() {
         search_container.classList.add("expand");
         const res = await fetch(`https://myproxy.uaena.io/api?type=ai&input=${encodeURIComponent(query)}`);
         const data = await res.json();
-        ai_chat.style.textAlign=  "left";
+        ai_chat.style.textAlign = "left";
         ai_chat.textContent = data.output_text;
         searchInput.value = "";
         searchInput.placeholder = query;
@@ -140,6 +140,60 @@ if (!getStoredQuickLinks()) {
     storeQuickLinks(DEFAULT_QUICK_LINKS);
 }
 
+function expandQuickLinkAndOpen(cardEl, url) {
+    // Measure current card position/size
+    const rect = cardEl.getBoundingClientRect();
+
+    // Backdrop - fades to white
+    const backdrop = document.createElement('div');
+    backdrop.className = 'quick-link-backdrop';
+    document.body.appendChild(backdrop);
+    requestAnimationFrame(() => backdrop.classList.add('show'));
+
+    // create a clone
+    const expander = document.createElement('div');
+    expander.className = 'quick-link-expander center';
+    const icon = cardEl.querySelector('.quick-link-icon')?.cloneNode(true);
+    const label = cardEl.querySelector('.quick-link-label')?.cloneNode(true);
+    const content = document.createElement('div');
+    content.className = 'quick-link-content';
+    if (icon) content.appendChild(icon);
+    if (label) content.appendChild(label);
+    expander.appendChild(content);
+
+    // assign at the clicked quick-link position
+    Object.assign(expander.style, {
+        top: rect.top + 'px',
+        left: rect.left + 'px',
+        width: rect.width + 'px',
+        height: rect.height + 'px'
+    });
+
+    document.body.appendChild(expander);
+
+    // Next frame: animate to fullscreen
+    requestAnimationFrame(() => {
+        expander.classList.add('fullscreen');
+        Object.assign(expander.style, {
+            top: '0px',
+            left: '0px',
+            width: '100vw',
+            height: '100vh',
+            borderRadius: '35px',
+            boxShadow: 'none',
+        });
+    });
+
+    // After transition finishes, navigate
+    const onEnd = () => {
+        expander.removeEventListener('transitionend', onEnd);
+        window.location.assign(url)
+    };
+    expander.addEventListener('transitionend', onEnd, { once: true });
+}
+
+
+
 function renderQuickLinks() {
     let links = getStoredQuickLinks();
     let minVisible = Math.max(links.length, 8);
@@ -187,9 +241,9 @@ function createQuickLinkElement(link, idx) {
     div.appendChild(label);
 
     // Go to link on click
-    div.addEventListener('click', e => {
+    div.addEventListener('click', async e => {
         if (!div.classList.contains('show-context')) {
-            window.location.assign(link.url);
+            expandQuickLinkAndOpen(div, link.url);
         }
     });
 
