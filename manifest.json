@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "MatchaTab",
+    "version": "1.0.0",
+    "description": "A clean new-tab page with AI chat, quick links, stocks, and news.",
+    "chrome_url_overrides": {
+        "newtab": "index.html"
+    },
+    "icons": {
+        "16": "assets/images/favicon.ico",
+        "32": "assets/images/favicon.ico",
+        "48": "assets/images/favicon.ico",
+        "128": "assets/images/favicon.ico"
+    },
+    "permissions": [],
+    "host_permissions": [
+        "https://myproxy.uaena.io/*",
+        "https://www.google.com/s2/*"
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https://www.google.com https://*.uaena.io https:; connect-src 'self' https://myproxy.uaena.io https://www.google.com; frame-src 'none';"
+    }
+}
