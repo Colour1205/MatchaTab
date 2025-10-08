@@ -397,18 +397,19 @@ async function fetchFavicon(url) {
     let { origin, hostname } = new URL(url);
     const candidates = [
         `https://www.google.com/s2/favicons?sz=128&domain_url=${hostname}`,
-        `${origin}/favicon.ico`,
-        `${origin}/favicon.png`,
-        `${origin}/assets/favicon.ico`,
-        `${origin}/assets/favicon.png`,
-        `${origin}/assets/images/favicon.ico`,
-        `${origin}/assets/images/favicon.png`,
-        `${origin}/static/favicon.ico`,
-        `${origin}/static/favicon.png`,
-        `${origin}/images/favicon.ico`,
-        `${origin}/images/favicon.png`,
-        `${origin}/icons/favicon.ico`,
-        `${origin}/icons/favicon.png`
+        /* fall back removed to pass chrome extension inspection */
+        // `${origin}/favicon.ico`,
+        // `${origin}/favicon.png`,
+        // `${origin}/assets/favicon.ico`,
+        // `${origin}/assets/favicon.png`,
+        // `${origin}/assets/images/favicon.ico`,
+        // `${origin}/assets/images/favicon.png`,
+        // `${origin}/static/favicon.ico`,
+        // `${origin}/static/favicon.png`,
+        // `${origin}/images/favicon.ico`,
+        // `${origin}/images/favicon.png`,
+        // `${origin}/icons/favicon.ico`,
+        // `${origin}/icons/favicon.png`
     ];
     function imageExists(src) {
         return new Promise(resolve => {

@@ -230,7 +230,6 @@ async function makeChart(symbol) {
             "axisColor": "#FFFFFF"
         }],
         "creditsPosition": "bottom-right",
-        "hideCredits": true,
         "graphs": [{
             "id": "g1",
             "proCandlesticks": false,
