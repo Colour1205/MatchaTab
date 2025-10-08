@@ -12,6 +12,7 @@
     --dark-context-bg: rgba(40, 40, 55, 0.85);
     --backdrop-blur: blur(3px);
     --backdrop-color: rgba(40, 40, 50, 0.6);
+    --transition-expand: all 315ms cubic-bezier(0.20, 0.80, 0.20, 1)
 }
 
 html,
@@ -101,6 +102,21 @@ body {
     z-index: 1;
 }
 
+#ai-chat {
+    display: none;
+    flex-basis: 100%;
+    padding: 12px 16px;
+    white-space: pre-wrap;
+    color: var(--dark-text-primary);
+}
+
+.search-container-inner {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
 .search-container {
     display: flex;
     justify-content: center;
@@ -114,6 +130,11 @@ body {
     height: 60px;
     backdrop-filter: var(--backdrop-blur);
     border: 1px solid var(--dark-divider);
+    transition: all 0.3s ease;
+}
+
+.search-container.expand {
+    height: fit-content;
 }
 
 .search-container input[type="text"] {
@@ -123,7 +144,7 @@ body {
     border: none;
     background: transparent;
     color: var(--dark-text-primary);
-    font-weight: bold;
+    font-weight: normal;
     outline: none;
     padding-left: 20px;
     padding-right: 5px;
@@ -132,14 +153,11 @@ body {
 
 .search-container input[type="text"]::placeholder {
     color: var(--dark-text-secondary);
+    font-weight: normal;
 }
 
 .search-container input[type="text"]:focus::placeholder {
-    color: transparent;
-}
-
-.search-container input[type="text"]:focus {
-    font-weight: normal;
+    color: #666;
 }
 
 .search-container input[type="text"].ai-mode::placeholder {
@@ -151,6 +169,8 @@ body {
 }
 
 #toggle-ai {
+    width: 35px;
+    height: 35px;
     right: 0;
     padding: 10px;
     padding-top: 7px;
@@ -160,7 +180,7 @@ body {
     background: rgba(50, 50, 65, 0.6);
     border-radius: 13px;
     color: var(--dark-text-secondary);
-    font-weight: bold;
+    font-weight: 600;
     cursor: pointer;
     transition-property: box-shadow, transform;
     transition-duration: 0.3s;
@@ -257,7 +277,7 @@ body {
     cursor: pointer;
     background: var(--dark-card-bg);
     box-shadow: 0 1px 8px var(--dark-shadow);
-    transition: background 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
     position: relative;
     user-select: none;
     backdrop-filter: var(--backdrop-blur);
@@ -267,6 +287,50 @@ body {
 .quick-link:hover {
     background: var(--dark-card-hover);
     box-shadow: 0 3px 12px rgba(125, 140, 255, 0.15);
+}
+
+.quick-link-expander {
+    position: fixed;
+    z-index: 9999;
+    border-radius: 16px;
+    background: var(--dark-card-bg);
+    backdrop-filter: var(--backdrop-blur);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    transition: var(--transition-expand);
+    ;
+}
+
+.quick-link-expander.center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-link-expander .quick-link-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: scale(1);
+    transition: var(--transition-expand)
+}
+
+.quick-link-expander.fullscreen .quick-link-content {
+    transform: scale(2);
+    background: rgba(30, 30, 40, 1);
+}
+
+.quick-link-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(30, 30, 40, 0);
+    z-index: 9998;
+    transition: var(--transition-expand)
+}
+
+.quick-link-backdrop.show {
+    background: rgba(30, 30, 40, 1);
 }
 
 .quick-link-icon {
@@ -326,7 +390,6 @@ body {
     background: rgba(70, 75, 100, 0.5);
 }
 
-/* stock section */
 .stock-section-wrap {
     justify-content: center;
 }
@@ -444,7 +507,7 @@ body {
 
 .stock-container-inner.button.active {
     background: rgba(204, 204, 255, 0.77);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.267);
     transform: scale(1.1);
     color: black;
 }
@@ -512,7 +575,6 @@ body {
     height: 100%;
 }
 
-/* news section */
 .news-section {
     display: flex;
     flex-direction: column;
@@ -570,13 +632,11 @@ body {
     display: block;
 }
 
-/* --- side container ---*/
 .side-container {
     z-index: 3;
     position: fixed;
 }
 
-/* settings button */
 #settings-button {
     position: fixed;
     bottom: 20px;
@@ -611,7 +671,6 @@ body {
     transform: scale(1) translateY(-0.2);
 }
 
-/* settings panel */
 #settings-container {
     opacity: 0;
     pointer-events: none;
@@ -765,7 +824,6 @@ select option {
     color: #E6EAFF;
 }
 
-/* responsive styles */
 @media (max-width: 700px) {
     #quick-links-section {
         grid-template-columns: repeat(4, 110px);
@@ -795,7 +853,6 @@ select option {
         box-sizing: border-box;
     }
 
-    /* Ensure close button stays within safe area */
     .close.button {
         right: max(15px, env(safe-area-inset-right));
         top: max(15px, env(safe-area-inset-top));
@@ -835,7 +892,6 @@ select option {
         padding-top: 7%;
     }
 
-    /* make inner button smaller */
     .stock-container-inner.button {
         width: 40px;
         min-width: 40px;
