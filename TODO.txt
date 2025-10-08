@@ -7,4 +7,3 @@ TODO list
 - trendlines on stock graph
 - stock graph header line to display quick information
 - customize quick links - upload icon, change name, url
-- full screen quick link expand animation before jumping into the link
