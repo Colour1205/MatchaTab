@@ -141,73 +141,6 @@ async function updateStockPrices() {
     );
 }
 
-
-function isIntraday(iv) {
-    const s = String(iv).toLowerCase();
-    return /m$/.test(s) || s === '60m' || s === '90m' || s === '1h';
-}
-
-function sanitizeAndClamp(ts, q, gmtoffsetSec, symbol, intraday) {
-    const O = q.open || [], H = q.high || [], L = q.low || [], C = q.close || [];
-    const n = Math.min(ts.length, O.length, H.length, L.length, C.length);
-    const SYM = (symbol || '').toUpperCase();
-    const isCrypto = SYM.endsWith('-USD');
-
-    const closes = [];
-    const atrWin = 20;
-    const atr = [];
-    const pushATR = (c) => {
-        closes.push(c);
-        const m = closes.length;
-        if (m >= 2) {
-            const d = Math.abs(closes[m - 1] - closes[m - 2]);
-            atr.push(d);
-            if (atr.length > atrWin) atr.shift();
-        }
-    };
-
-    const out = [];
-    for (let i = 0; i < n; i++) {
-        const t = ts[i], o = O[i], h = H[i], l = L[i], c = C[i];
-        if (![o, h, l, c].every(Number.isFinite)) continue;
-        if (intraday && !inRegularSession(t, gmtoffsetSec, isCrypto)) continue;
-
-        let hi = Math.max(o, h, c);
-        let lo = Math.min(o, l, c);
-
-        if (intraday) {
-            const avgMove = atr.length ? (atr.reduce((a, b) => a + b, 0) / atr.length) : 0;
-            const ref = closes.length ? closes[closes.length - 1] : c || o;
-            const softBand = Math.max(1, ref * 0.015, avgMove * 6);
-            const upperGuard = Math.max(o, c) + softBand;
-            const lowerGuard = Math.min(o, c) - softBand;
-            if (hi > upperGuard) hi = upperGuard;
-            if (lo < lowerGuard) lo = lowerGuard;
-            const span = (hi - lo) / Math.max(1e-9, ref);
-            if (span > 0.20) { pushATR(c); continue; }
-        } else {
-            if (hi < Math.max(o, c)) hi = Math.max(o, c);
-            if (lo > Math.min(o, c)) lo = Math.min(o, c);
-        }
-
-        out.push({ date: new Date(t * 1000), open: o, high: hi, low: lo, close: c });
-        pushATR(c);
-    }
-    return out;
-}
-
-
-function inRegularSession(tSec, gmtoffsetSec, isCrypto = false) {
-    if (isCrypto) return true;
-    const local = new Date((tSec + gmtoffsetSec) * 1000);
-    const d = local.getUTCDay();
-    if (d === 0 || d === 6) return false;
-    const h = local.getUTCHours(), m = local.getUTCMinutes();
-    const afterOpen = (h > 9) || (h === 9 && m >= 30);
-    const beforeClose = (h < 16) || (h === 16 && m === 0);
-    return afterOpen && beforeClose;
-}
-
 async function makeChart(symbol) {
     if (!symbol) return false;
 
@@ -223,14 +156,31 @@ async function makeChart(symbol) {
         return false;
     }
 
-    const ts = data.timestamp || [];
     const q = data.indicators?.quote?.[0] || {};
-    const gmtoffsetSec = data.meta?.gmtoffset ?? 0;
-    const intraday = isIntraday(interval);
+    const ts = data.timestamp || [];
+    const intraday = interval.endsWith("m") || interval.endsWith("h");
 
-    const candles = sanitizeAndClamp(ts, q, gmtoffsetSec, symbol, intraday);
+    const O = q.open || [];
+    const H = q.high || [];
+    const L = q.low || [];
+    const C = q.close || [];
+    const n = Math.min(ts.length, O.length, H.length, L.length, C.length);
+
+    const candles = [];
+    for (let i = 0; i < n; i++) {
+        if (![O[i], H[i], L[i], C[i]].every(Number.isFinite)) continue;
+
+        candles.push({
+            date: new Date(ts[i] * 1000),
+            open: O[i],
+            high: H[i],
+            low: L[i],
+            close: C[i]
+        });
+    }
+
     if (!candles.length) {
-        console.warn("No candle data after sanitizeAndClamp — candles.length =", candles.length);
+        console.warn("no valid candle data for", symbol);
         return false;
     }
 
