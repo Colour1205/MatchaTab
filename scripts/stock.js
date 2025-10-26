@@ -12,7 +12,7 @@ const STOCK_SYMBOLS = [
 ];
 
 let interval = "1d";
-let range = "6mo";
+let range = "1y";
 let currSymbol = null;
 let root = null;
 
@@ -200,6 +200,10 @@ async function makeChart(symbol) {
     ]);
 
     var stockChart = root.container.children.push(am5stock.StockChart.new(root, {
+        stockPositiveColor: null,
+        stockNegativeColor: null,
+        volumePositiveColor: null,
+        volumeNegativeColor: null
     }));
 
     root.numberFormatter.set("numberFormat", "#,###.00");
@@ -208,7 +212,7 @@ async function makeChart(symbol) {
         wheelY: "zoomX",
         panX: true,
         panY: true,
-        height: am5.percent(70)
+        height: am5.percent(100)
     }));
 
     var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
@@ -221,13 +225,9 @@ async function makeChart(symbol) {
     }));
 
     const dateMsArr = formatted.map(d => {
-        // support both { Date: Date } (example style) or { date: ms } (your style)
-        if (d.Date instanceof Date) return d.Date.getTime();
         if (d.date instanceof Date) return d.date.getTime();
         if (typeof d.date === "number") return d.date;
-        if (typeof d.Date === "number") return d.Date;
-        // fallback: try parse dateStr
-        return new Date(d.dateStr || d.Date).getTime();
+        return new Date(d.dateStr).getTime();
     });
 
     const intervalInfo = detectBaseIntervalFromDates(dateMsArr, intraday);
@@ -251,18 +251,22 @@ async function makeChart(symbol) {
         calculateAggregates: true,
         xAxis: dateAxis,
         yAxis: valueAxis,
+        groupData: groupData,
         legendValueText: "{valueY}",
         tooltip: am5.Tooltip.new(root, {})
     }));
 
+    const riseColor = "rgba(100, 210, 92, 1)";
+    const dropColor = "rgba(219, 89, 63, 1)";
+
     valueSeries.columns.template.states.create("riseFromOpen", {
-        fill: am5.color("#36cc25ff"),
-        stroke: am5.color("#36cc25ff")
+        fill: am5.Color.fromCSS(riseColor),
+        stroke: am5.Color.fromCSS(riseColor),
     });
 
     valueSeries.columns.template.states.create("dropFromOpen", {
-        fill: am5.color("#e31d1dff"),
-        stroke: am5.color("#e31d1dff")
+        fill: am5.Color.fromCSS(dropColor),
+        stroke: am5.Color.fromCSS(dropColor)
     });
 
     valueSeries.columns.template.setAll({
@@ -270,16 +274,12 @@ async function makeChart(symbol) {
     });
 
     valueSeries.get("tooltip").label.set("text", "Open: {openValueY}\nHigh: {highValueY}\nLow: {lowValueY}\nClose: {valueY}")
-
     valueSeries.data.setAll(formatted);
-
     stockChart.set("stockSeries", valueSeries);
 
     var valueLegend = mainPanel.plotContainer.children.push(am5stock.StockLegend.new(root, {
         stockChart: stockChart
-
     }));
-    valueLegend.data.setAll([valueSeries]);
 
     const cursor = mainPanel.set("cursor", am5xy.XYCursor.new(root, {
         behvior: "zoomXY",
@@ -289,29 +289,39 @@ async function makeChart(symbol) {
 
 
     /* technical indicators */
-    let period = [9, 21, 50, 100];
+    let period = [
+        [9, "rgba(227, 183, 255, 0.99)"],
+        [21, "rgba(208, 155, 98, 1)"],
+        [50, "rgba(255, 255, 255, 1)"]
+    ];
 
-    period.forEach(p => {
-        stockChart.indicators.push(am5stock.MovingAverage.new(root, {
+    period.forEach(([p, color]) => {
+        const MA = stockChart.indicators.push(am5stock.MovingAverage.new(root, {
             stockChart: stockChart,
             stockSeries: valueSeries,
-            // legend: valueLegend,
+            legend: valueLegend,
             period: p,
             type: "simple",
+            seriesColor: am5.Color.fromCSS(color),
         }));
+
+        MA.series.set("tensionX", 1);
+        MA.series.strokes.template.setAll({
+            strokeWidth: 1 + (p / 70),
+            strokeLinejoin: "round",
+        })
+        MA.series.set("groupData", groupData);
     })
 
     // const BB = stockChart.indicators.push(am5stock.BollingerBands.new(root, {
     //     stockChart: stockChart,
     //     stockSeries: valueSeries,
-    //     //legend: valueLegend,
     //     period: 30,
     // }))
 
     const MACD = stockChart.indicators.push(am5stock.MACD.new(root, {
         stockChart: stockChart,
         stockSeries: valueSeries,
-        legend: valueLegend,
         shortPeriod: 12,
         longPeriod: 26,
         signalPeriod: 9,
@@ -328,6 +338,15 @@ async function makeChart(symbol) {
         fontWeight: "bold"
     });
 
+    MACD.xAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontSize: 11
+    });
+    MACD.yAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontWeight: "bold"
+    });
+
     // axes - grid lines
     dateAxis.get("renderer").grid.template.setAll({
         stroke: am5.color("#fff"),
@@ -338,20 +357,38 @@ async function makeChart(symbol) {
         strokeOpacity: 0.2
     });
 
+    MACD.xAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.3
+    });
+    MACD.yAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.2
+    });
+
     // cursor color
     cursor.lineX.setAll({
         stroke: am5.color(0xffffff), // white
         strokeWidth: 1,
-        strokeOpacity: 0.8
+        strokeOpacity: 1
     });
-
     cursor.lineY.setAll({
         stroke: am5.color(0xffffff), // white
         strokeWidth: 1,
-        strokeOpacity: 0.8
+        strokeOpacity: 1
     });
 
-    // indicator colors
+    MACD.panel.get("cursor").lineX.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+    MACD.panel.get("cursor").lineY.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+    // indicator styles
 
 
     return true;
