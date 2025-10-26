@@ -450,7 +450,7 @@ body {
 
 .stock.container {
     width: 60vw;
-    height: 70vh;
+    height: 80vh;
     position: fixed;
     display: flex;
     flex-direction: column;
