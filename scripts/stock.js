@@ -12,8 +12,9 @@ const STOCK_SYMBOLS = [
 ];
 
 let interval = "1d";
-let range = "6mo";
+let range = "1y";
 let currSymbol = null;
+let root = null;
 
 document.addEventListener("DOMContentLoaded", function () {
     const stockSection = document.getElementById('stock-section');
@@ -99,9 +100,10 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-async function fetchQuote(symbol, interval, range, includePrePost = true) {
+async function fetchQuote(symbol, interval, range, includePrePost = false) {
     try {
-        const url = `https://myproxy.uaena.io/api?type=stock&symbol=${symbol}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+        const url = `https://myproxy.uaena.io/api?type=stock&symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}&includePrePost=${encodeURIComponent(includePrePost)}`;
+
         const res = await fetch(url);
         const data = await res.json();
         if (!data.chart || !data.chart.result || !data.chart.result[0]) return null;
@@ -116,7 +118,7 @@ async function fetchQuote(symbol, interval, range, includePrePost = true) {
 async function updateStockPrices() {
     await Promise.all(
         STOCK_SYMBOLS.map(async ({ symbol }) => {
-            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')}`;
+            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')} `;
             const priceElem = document.querySelector(`#${safeId} .stock-price`);
             if (!priceElem) return;
             try {
@@ -129,7 +131,7 @@ async function updateStockPrices() {
                     const percentChange = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
                     let color = percentChange > 0 ? "#3E9D45" : percentChange < 0 ? "#CA5C5C" : "#444";
                     let sign = percentChange > 0 ? "+" : "";
-                    priceElem.innerHTML = `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+                    priceElem.innerHTML = `<span style="color:${color};"> ${price.toFixed(2)}<small>(${sign}${percentChange.toFixed(2)}%)</small></span> `;
                 } else {
                     priceElem.textContent = "—";
                 }
@@ -140,170 +142,304 @@ async function updateStockPrices() {
     );
 }
 
-
-function isIntraday(iv) {
-    const s = String(iv).toLowerCase();
-    return /m$/.test(s) || s === '60m' || s === '90m' || s === '1h';
-}
-
-function sanitizeAndClamp(ts, q, gmtoffsetSec, symbol, intraday) {
-    const O = q.open || [], H = q.high || [], L = q.low || [], C = q.close || [];
-    const n = Math.min(ts.length, O.length, H.length, L.length, C.length);
-    const SYM = (symbol || '').toUpperCase();
-    const isCrypto = SYM.endsWith('-USD');
-
-    const closes = [];
-    const atrWin = 20;
-    const atr = [];
-    const pushATR = (c) => {
-        closes.push(c);
-        const m = closes.length;
-        if (m >= 2) {
-            const d = Math.abs(closes[m - 1] - closes[m - 2]);
-            atr.push(d);
-            if (atr.length > atrWin) atr.shift();
-        }
-    };
-
-    const out = [];
-    for (let i = 0; i < n; i++) {
-        const t = ts[i], o = O[i], h = H[i], l = L[i], c = C[i];
-        if (![o, h, l, c].every(Number.isFinite)) continue;
-        if (intraday && !inRegularSession(t, gmtoffsetSec, isCrypto)) continue;
-
-        let hi = Math.max(o, h, c);
-        let lo = Math.min(o, l, c);
-
-        if (intraday) {
-            const avgMove = atr.length ? (atr.reduce((a, b) => a + b, 0) / atr.length) : 0;
-            const ref = closes.length ? closes[closes.length - 1] : c || o;
-            const softBand = Math.max(1, ref * 0.015, avgMove * 6);
-            const upperGuard = Math.max(o, c) + softBand;
-            const lowerGuard = Math.min(o, c) - softBand;
-            if (hi > upperGuard) hi = upperGuard;
-            if (lo < lowerGuard) lo = lowerGuard;
-            const span = (hi - lo) / Math.max(1e-9, ref);
-            if (span > 0.20) { pushATR(c); continue; }
-        } else {
-            if (hi < Math.max(o, c)) hi = Math.max(o, c);
-            if (lo > Math.min(o, c)) lo = Math.min(o, c);
-        }
-
-        out.push({ date: new Date(t * 1000), open: o, high: hi, low: lo, close: c });
-        pushATR(c);
-    }
-    return out;
-}
-
-
-function inRegularSession(tSec, gmtoffsetSec, isCrypto = false) {
-    if (isCrypto) return true;
-    const local = new Date((tSec + gmtoffsetSec) * 1000);
-    const d = local.getUTCDay();
-    if (d === 0 || d === 6) return false;
-    const h = local.getUTCHours(), m = local.getUTCMinutes();
-    const afterOpen = (h > 9) || (h === 9 && m >= 30);
-    const beforeClose = (h < 16) || (h === 16 && m === 0);
-    return afterOpen && beforeClose;
-}
-
-
 async function makeChart(symbol) {
+    if (!symbol) return false;
+
+    // dispose previous root if exists
+    if (root) {
+        try { root.dispose(); } catch (e) { console.warn("error disposing root", e); }
+        root = null;
+    }
+
     const data = await fetchQuote(symbol, interval, range);
-    if (!data) return false;
+    if (!data) {
+        console.warn("fetchQuote returned no data for", symbol);
+        return false;
+    }
 
-    const ts = data.timestamp || [];
     const q = data.indicators?.quote?.[0] || {};
-    const gmtoffsetSec = data.meta?.gmtoffset ?? 0;
-    const intraday = isIntraday(interval);
+    const ts = data.timestamp || [];
+    const intraday = interval.endsWith("m") || interval.endsWith("h");
 
-    const candles = sanitizeAndClamp(ts, q, gmtoffsetSec, symbol, intraday);
-    if (!candles.length) return;
+    const O = q.open || [];
+    const H = q.high || [];
+    const L = q.low || [];
+    const C = q.close || [];
+    const n = Math.min(ts.length, O.length, H.length, L.length, C.length);
 
-    const chart = AmCharts.makeChart("stock-chart", {
-        "type": "serial",
-        "theme": "light",
-        "valueAxes": [{
-            "position": "left",
-            "gridColor": "#FFFFFF",
-            "color": "#FFFFFF",
-            "axisColor": "#FFFFFF"
-        }],
-        "creditsPosition": "bottom-right",
-        "graphs": [{
-            "id": "g1",
-            "proCandlesticks": false,
-            "balloonColor": "#100f1fff",
-            "balloonText": "Open:<b>[[open]]</b><br>Low:<b>[[low]]</b><br>High:<b>[[high]]</b><br>Close:<b>[[close]]</b><br>",
-            "closeField": "close",
-            "fillColors": "#3E9D45",
-            "highField": "high",
-            "lineColor": "#3E9D45",
-            "lineAlpha": 1,
-            "lowField": "low",
-            "fillAlphas": 1,
-            "negativeFillColors": "#CA5C5C",
-            "negativeLineColor": "#CA5C5C",
-            "openField": "open",
-            "title": "Price:",
-            "type": "candlestick",
-            "valueField": "close",
-            "precision": 2
-        }],
-        chartCursor: {
-            valueLineEnabled: true,
-            valueLineBalloonEnabled: true,
-            categoryBalloonDateFormat: "MMM DD, YYYY JJ:NN",
-            "color": "#FFFFFF",
-        },
-        mouseWheelZoomEnabled: true,
-        "categoryField": "date",
-        categoryAxis: {
-            parseDates: true,
-            equalSpacing: true,
-            "minPeriod": "mm",
-            "gridColor": "#FFFFFF",
-            "color": "#FFFFFF",
-            "axisColor": "#FFFFFF"
-        },
-        "balloon": {
-            "fillAlpha": 0.6,
-            "borderThickness": 0,
-            "color": "#FFFFFF",
-            "fontSize": 12,
-            "cornerRadius": 15,
-            "horizontalPadding": 12,
-            "verticalPadding": 8,
-            "adjustBorderColor": false,
-            "showBullet": true
-        },
-        "dataProvider": candles
+    const candles = [];
+    for (let i = 0; i < n; i++) {
+        if (![O[i], H[i], L[i], C[i]].every(Number.isFinite)) continue;
+
+        candles.push({
+            date: new Date(ts[i] * 1000),
+            open: O[i],
+            high: H[i],
+            low: L[i],
+            close: C[i]
+        });
+    }
+
+    if (!candles.length) {
+        console.warn("no valid candle data for", symbol);
+        return false;
+    }
+
+    // Convert date to numeric ms timestamp and ensure OHLC numbers exist
+    const formatted = candles.map(d => ({
+        date: (d.date instanceof Date) ? d.date.getTime() : Number(new Date(d.date).getTime()),
+        open: Number(d.open),
+        high: Number(d.high),
+        low: Number(d.low),
+        close: Number(d.close)
+    }));
+
+    root = am5.Root.new("stock-chart");
+
+    root.setThemes([
+        am5themes_Animated.new(root)
+    ]);
+
+    var stockChart = root.container.children.push(am5stock.StockChart.new(root, {
+        stockPositiveColor: null,
+        stockNegativeColor: null,
+        volumePositiveColor: null,
+        volumeNegativeColor: null
+    }));
+
+    root.numberFormatter.set("numberFormat", "#,###.00");
+
+    var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+        wheelY: "zoomX",
+        panX: true,
+        panY: true,
+        height: am5.percent(100)
+    }));
+
+    var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+        renderer: am5xy.AxisRendererY.new(root, {
+            pan: "zoom"
+        }),
+        tooltip: am5.Tooltip.new(root, {}),
+        numberFormat: "#,###.00",
+        extraTooltipPrecision: 2
+    }));
+
+    const dateMsArr = formatted.map(d => {
+        if (d.date instanceof Date) return d.date.getTime();
+        if (typeof d.date === "number") return d.date;
+        return new Date(d.dateStr).getTime();
     });
 
-    const zoom = () => {
-        const n = chart.dataProvider.length;
-        if (!n) return;
-        chart.zoomToIndexes(0, n - 1);
-    };
-    chart.addListener("rendered", zoom);
-    zoom();
+    const intervalInfo = detectBaseIntervalFromDates(dateMsArr, intraday);
+    const baseInterval = intervalInfo.baseInterval;
+    const groupData = !!intervalInfo.groupData;
+
+    var dateAxis = mainPanel.xAxes.push(am5xy.GaplessDateAxis.new(root, {
+        baseInterval: baseInterval,
+        groupData: groupData,
+        renderer: am5xy.AxisRendererX.new(root, {}),
+        tooltip: am5.Tooltip.new(root, {})
+    }));
+
+    var valueSeries = mainPanel.series.push(am5xy.CandlestickSeries.new(root, {
+        name: symbol.toUpperCase(),
+        valueXField: "date",
+        valueYField: "close",
+        highValueYField: "high",
+        lowValueYField: "low",
+        openValueYField: "open",
+        calculateAggregates: true,
+        xAxis: dateAxis,
+        yAxis: valueAxis,
+        groupData: groupData,
+        legendValueText: "{valueY}",
+        tooltip: am5.Tooltip.new(root, {})
+    }));
+
+    const riseColor = "rgba(100, 210, 92, 1)";
+    const dropColor = "rgba(219, 89, 63, 1)";
+
+    valueSeries.columns.template.states.create("riseFromOpen", {
+        fill: am5.Color.fromCSS(riseColor),
+        stroke: am5.Color.fromCSS(riseColor),
+    });
+
+    valueSeries.columns.template.states.create("dropFromOpen", {
+        fill: am5.Color.fromCSS(dropColor),
+        stroke: am5.Color.fromCSS(dropColor)
+    });
+
+    valueSeries.columns.template.setAll({
+        width: am5.percent(80)
+    });
+
+    valueSeries.get("tooltip").label.set("text", "Open: {openValueY}\nHigh: {highValueY}\nLow: {lowValueY}\nClose: {valueY}")
+    valueSeries.data.setAll(formatted);
+    stockChart.set("stockSeries", valueSeries);
+
+    var valueLegend = mainPanel.plotContainer.children.push(am5stock.StockLegend.new(root, {
+        stockChart: stockChart
+    }));
+
+    const cursor = mainPanel.set("cursor", am5xy.XYCursor.new(root, {
+        behvior: "zoomXY",
+        yAxis: valueAxis,
+        xAxis: dateAxis,
+    }));
+
+
+    /* technical indicators */
+    let period = [
+        [9, "rgba(227, 183, 255, 0.99)"],
+        [21, "rgba(208, 155, 98, 1)"],
+        [50, "rgba(255, 255, 255, 1)"]
+    ];
+
+    period.forEach(([p, color]) => {
+        const MA = stockChart.indicators.push(am5stock.MovingAverage.new(root, {
+            stockChart: stockChart,
+            stockSeries: valueSeries,
+            legend: valueLegend,
+            period: p,
+            type: "simple",
+            seriesColor: am5.Color.fromCSS(color),
+        }));
+
+        MA.series.set("tensionX", 1);
+        MA.series.strokes.template.setAll({
+            strokeWidth: 1 + (p / 70),
+            strokeLinejoin: "round",
+        })
+        MA.series.set("groupData", groupData);
+    })
+
+    // const BB = stockChart.indicators.push(am5stock.BollingerBands.new(root, {
+    //     stockChart: stockChart,
+    //     stockSeries: valueSeries,
+    //     period: 30,
+    // }))
+
+    const MACD = stockChart.indicators.push(am5stock.MACD.new(root, {
+        stockChart: stockChart,
+        stockSeries: valueSeries,
+        shortPeriod: 12,
+        longPeriod: 26,
+        signalPeriod: 9,
+    }))
+
+    /* set colors of chart */
+    // axes - labels
+    dateAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontSize: 11
+    });
+    valueAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontWeight: "bold"
+    });
+
+    MACD.xAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontSize: 11
+    });
+    MACD.yAxis.get("renderer").labels.template.setAll({
+        fill: am5.color("#fff"),
+        fontWeight: "bold"
+    });
+
+    // axes - grid lines
+    dateAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.3
+    });
+    valueAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.2
+    });
+
+    MACD.xAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.3
+    });
+    MACD.yAxis.get("renderer").grid.template.setAll({
+        stroke: am5.color("#fff"),
+        strokeOpacity: 0.2
+    });
+
+    // cursor color
+    cursor.lineX.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+    cursor.lineY.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+
+    MACD.panel.get("cursor").lineX.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+    MACD.panel.get("cursor").lineY.setAll({
+        stroke: am5.color(0xffffff), // white
+        strokeWidth: 1,
+        strokeOpacity: 1
+    });
+    // indicator styles
+
+
     return true;
 }
 
-
-// Horizontal scroll for stock section
-const stockSection = document.getElementById('stock-section');
-stockSection.addEventListener('wheel', function (e) {
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        const atStart = stockSection.scrollLeft === 0;
-        const atEnd = Math.ceil(stockSection.scrollLeft + stockSection.clientWidth) >= stockSection.scrollWidth;
-
-        if (e.deltaY < 0 && !atStart) {
-            e.preventDefault();
-            stockSection.scrollLeft += e.deltaY;
-        } else if (e.deltaY > 0 && !atEnd) {
-            e.preventDefault();
-            stockSection.scrollLeft += e.deltaY;
-        }
+// helper: choose baseInterval from array of numeric ms timestamps
+function detectBaseIntervalFromDates(datesMs, intraday) {
+    if (!datesMs || datesMs.length < 2) {
+        return { baseInterval: { timeUnit: "day", count: 1 }, groupData: true };
     }
-}, { passive: false });
+
+    // compute deltas and median delta to be robust against outliers
+    const deltas = [];
+    for (let i = 1; i < datesMs.length; i++) {
+        deltas.push(datesMs[i] - datesMs[i - 1]);
+    }
+    deltas.sort((a, b) => a - b);
+    const mid = Math.floor(deltas.length / 2);
+    const medianDelta = deltas.length % 2 === 1 ? deltas[mid] : Math.round((deltas[mid - 1] + deltas[mid]) / 2);
+
+    const MINUTE = 60 * 1000;
+    const HOUR = 60 * MINUTE;
+    const DAY = 24 * HOUR;
+    const WEEK = 7 * DAY;
+    const MONTH = 30 * DAY;
+
+    // prefer intraday granular units when intraday is true
+    if (medianDelta < MINUTE) {
+        // sub-minute? treat as 1 minute
+        return { baseInterval: { timeUnit: "minute", count: 1 }, groupData: false };
+    }
+    if (medianDelta < HOUR) {
+        // pick reasonable minute bucket (1,5,15,30,60)
+        const mins = Math.round(medianDelta / MINUTE);
+        const buckets = [1, 5, 15, 30, 60];
+        const choice = buckets.reduce((best, b) => (Math.abs(b - mins) < Math.abs(best - mins) ? b : best), buckets[0]);
+        return { baseInterval: { timeUnit: "minute", count: choice }, groupData: intraday ? false : true };
+    }
+    if (medianDelta < DAY) {
+        // pick hour bucket (1,2,3,4,6,12)
+        const hrs = Math.round(medianDelta / HOUR);
+        const buckets = [1, 2, 3, 4, 6, 12];
+        const choice = buckets.reduce((best, b) => (Math.abs(b - hrs) < Math.abs(best - hrs) ? b : best), buckets[0]);
+        return { baseInterval: { timeUnit: "hour", count: choice }, groupData: intraday ? false : true };
+    }
+    if (medianDelta < WEEK) {
+        return { baseInterval: { timeUnit: "day", count: 1 }, groupData: true };
+    }
+    if (medianDelta < MONTH) {
+        return { baseInterval: { timeUnit: "week", count: 1 }, groupData: true };
+    }
+    return { baseInterval: { timeUnit: "month", count: 1 }, groupData: true };
+}

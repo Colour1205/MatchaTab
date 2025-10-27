@@ -450,13 +450,13 @@ body {
 
 .stock.container {
     width: 60vw;
-    height: 70vh;
+    height: 80vh;
     position: fixed;
     display: flex;
     flex-direction: column;
     z-index: 0;
     opacity: 0;
-    background: rgba(17, 18, 39, 0.801);
+    background: rgba(2, 3, 7, 0.923);
     backdrop-filter: blur(7px);
     border-radius: 25px;
     padding: 20px;

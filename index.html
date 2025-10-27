@@ -121,8 +121,9 @@
         </div>
         <div class="stock-container-inner">
             <p>Interval</p>
-            <button class="stock-container-inner button interval" data-target="15m">15m</button>
-            <button class="stock-container-inner button interval" data-target="1h">1h</button>
+            <button class="stock-container-inner button interval" data-target="2m">2m</button>
+            <button class="stock-container-inner button interval" data-target="2m">30m</button>
+            <button class="stock-container-inner button interval" data-target="90m">90m</button>
             <button class="stock-container-inner button interval" data-target="1d">1d</button>
             <button class="stock-container-inner button interval" data-target="1wk">1wk</button>
             <button class="stock-container-inner button interval" data-target="1mo">1mo</button>
@@ -132,15 +133,17 @@
             <button class="stock-container-inner button range" data-target="1mo">1mo</button>
             <button class="stock-container-inner button range" data-target="6mo">6mo</button>
             <button class="stock-container-inner button range" data-target="1y">1y</button>
+            <button class="stock-container-inner button range" data-target="2y">2y</button>
             <button class="stock-container-inner button range" data-target="5y">5y</button>
             <button class="stock-container-inner button range" data-target="max">max</button>
         </div>
     </div>
     <div id="stock-background"></div>
 
-    <script src="libs/amcharts/amcharts.js"></script>
-    <script src="libs/amcharts/serial.js"></script>
-    <script src="libs/amcharts/light.js"></script>
+    <script src="libs/amcharts5/index.js"></script>
+    <script src="libs/amcharts5/xy.js"></script>
+    <script src="libs/amcharts5/stock.js"></script>
+    <script src="libs/amcharts5/themes/Animated.js"></script>
     <script src="scripts/main.js"></script>
     <script src="scripts/stock.js"></script>
 </body>

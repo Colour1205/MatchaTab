@@ -658,10 +658,120 @@ wallpaperBtn.addEventListener('click', () => {
     wallpaperFileInput.click();
 });
 
+/**
+ * Converts a Base64 data URL string into a Blob object.
+ * This is essential for getting the *actual* file size.
+ */
+function dataURLtoBlob(dataUrl) {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+/**
+ * Saves the final compressed wallpaper.
+ * (Assumes setBackgroundImage and WALLPAPER_KEY are defined elsewhere)
+ */
+function saveWallpaper(dataUrl, blob) {
+    console.log(`Final wallpaper size: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+
+    // Assuming setBackgroundImage and WALLPAPER_KEY are defined in your script
+    setBackgroundImage(dataUrl);
+    localStorage.setItem(WALLPAPER_KEY, dataUrl);
+}
+
+/**
+ * Asynchronously compresses a canvas image to be under 2MB.
+ * It first tries lowering JPEG quality, then resorts to resizing.
+ */
+async function compressAndSetWallpaper(canvas) {
+    const TARGET_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+    console.log('Compressing wallpaper...');
+
+    let dataUrl = '';
+    let blob;
+
+    // --- Strategy 1: Lower JPEG Quality ---
+    // Try a few common quality levels first
+    const qualityLevels = [1, 0.9, 0.8, 0.7, 0.6];
+    for (const quality of qualityLevels) {
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+        blob = dataURLtoBlob(dataUrl);
+
+        console.log(`Trying quality ${quality}: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+
+        if (blob.size <= TARGET_SIZE_BYTES) {
+            // Success!
+            saveWallpaper(dataUrl, blob);
+            return;
+        }
+    }
+
+    // --- Strategy 2: Resize Image ---
+    // If quality reduction wasn't enough, we need to resize.
+    console.log('Quality reduction not enough, resizing...');
+
+    // We need to draw the *original* (screen-fit) canvas image repeatedly,
+    // so we load its content into an Image object first.
+    const originalImage = new Image();
+    originalImage.src = canvas.toDataURL(); // Get the canvas content as it was passed in
+
+    // We must wait for this image to load before we can draw it
+    // This requires an 'await' which is why the function is 'async'
+    await new Promise(resolve => { originalImage.onload = resolve; });
+
+    let currentWidth = canvas.width;
+    let currentHeight = canvas.height;
+    let attempts = 10; // Max 10 resize attempts
+    const ctx = canvas.getContext('2d');
+
+    // We start from the last known blob size (at 0.6 quality)
+    while (blob.size > TARGET_SIZE_BYTES && attempts > 0) {
+        // Reduce dimensions by 10%
+        currentWidth *= 0.9;
+        currentHeight *= 0.9;
+
+        // Resize canvas
+        canvas.width = Math.round(currentWidth);
+        canvas.height = Math.round(currentHeight);
+
+        // Draw the *original* screen-fit image onto the *new* smaller canvas
+        ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+        // Generate with a decent quality
+        dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        blob = dataURLtoBlob(dataUrl);
+
+        console.log(`Resizing (Attempt ${11 - attempts}): ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+        attempts--;
+    }
+
+    if (blob.size <= TARGET_SIZE_BYTES) {
+        // Success after resizing
+        saveWallpaper(dataUrl, blob);
+    } else {
+        // Failed to compress under 2MB, but we'll use the smallest version we got
+        console.error('Could not compress image under 2MB. Saving smallest version.');
+        saveWallpaper(dataUrl, blob);
+    }
+}
+
+
 // When file selected, read and set as background
 wallpaperFileInput.addEventListener('change', function () {
     const file = this.files && this.files[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        console.error('File is not an image.');
+        return;
+    }
 
     const img = new Image();
     const reader = new FileReader();
@@ -670,13 +780,17 @@ wallpaperFileInput.addEventListener('change', function () {
         img.src = e.target.result;
     };
 
+    reader.onerror = function () {
+        console.error('Could not read file.');
+    };
+
     img.onload = function () {
         const MAX_WIDTH = window.innerWidth * window.devicePixelRatio;
         const MAX_HEIGHT = window.innerHeight * window.devicePixelRatio;
         let width = img.width;
         let height = img.height;
 
-        // Maintain aspect ratio
+        // Maintain aspect ratio (your original logic)
         if (width > MAX_WIDTH || height > MAX_HEIGHT) {
             const aspectRatio = width / height;
             if (width > height) {
@@ -688,30 +802,19 @@ wallpaperFileInput.addEventListener('change', function () {
             }
         }
 
+        // Create the canvas with the screen-fit dimensions
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try JPEG first (compressed)
-        let dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        let sizeMB = (dataUrl.length * 2) / 1024 / 1024;
-        console.log(`JPEG size: ${sizeMB.toFixed(2)} MB`);
+        // Call the new async compression function
+        compressAndSetWallpaper(canvas);
+    };
 
-        if (sizeMB > 2) {
-            // Try PNG fallback (may be larger or smaller depending on image)
-            dataUrl = canvas.toDataURL('image/png');
-            sizeMB = (dataUrl.length * 2) / 1024 / 1024;
-            console.log(`PNG fallback size: ${sizeMB.toFixed(2)} MB`);
-        }
-
-        if (sizeMB > 2) {
-            alert('Image size too large, might not be cached properly');
-        }
-
-        setBackgroundImage(dataUrl);
-        localStorage.setItem(WALLPAPER_KEY, dataUrl);
+    img.onerror = function () {
+        console.error('Could not load image.');
     };
 
     reader.readAsDataURL(file);
