@@ -100,9 +100,10 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-async function fetchQuote(symbol, interval, range, includePrePost = true) {
+async function fetchQuote(symbol, interval, range, includePrePost = false) {
     try {
-        const url = `https://myproxy.uaena.io/api?type=stock&symbol=${symbol}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}`;
+        const url = `https://myproxy.uaena.io/api?type=stock&symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}&includePrePost=${encodeURIComponent(includePrePost)}`;
+
         const res = await fetch(url);
         const data = await res.json();
         if (!data.chart || !data.chart.result || !data.chart.result[0]) return null;
@@ -117,7 +118,7 @@ async function fetchQuote(symbol, interval, range, includePrePost = true) {
 async function updateStockPrices() {
     await Promise.all(
         STOCK_SYMBOLS.map(async ({ symbol }) => {
-            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')}`;
+            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')} `;
             const priceElem = document.querySelector(`#${safeId} .stock-price`);
             if (!priceElem) return;
             try {
@@ -130,7 +131,7 @@ async function updateStockPrices() {
                     const percentChange = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
                     let color = percentChange > 0 ? "#3E9D45" : percentChange < 0 ? "#CA5C5C" : "#444";
                     let sign = percentChange > 0 ? "+" : "";
-                    priceElem.innerHTML = `<span style="color:${color};">${price.toFixed(2)} <small>(${sign}${percentChange.toFixed(2)}%)</small></span>`;
+                    priceElem.innerHTML = `<span style="color:${color};"> ${price.toFixed(2)}<small>(${sign}${percentChange.toFixed(2)}%)</small></span> `;
                 } else {
                     priceElem.textContent = "—";
                 }

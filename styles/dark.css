@@ -458,7 +458,7 @@ body {
     flex-direction: column;
     z-index: 0;
     opacity: 0;
-    background: rgb(5, 7, 19);
+    background: rgba(2, 3, 7, 0.923);
     backdrop-filter: blur(7px);
     border-radius: 25px;
     padding: 20px;
