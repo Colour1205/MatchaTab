@@ -11,10 +11,76 @@ const STOCK_SYMBOLS = [
     { symbol: 'GC=F', label: 'Gold Futures' },
 ];
 
+const estimates = {};
+const estimateListeners = {};
+
 let interval = "1d";
 let range = "1y";
 let currSymbol = null;
 let root = null;
+
+function notifyEstimateReady(symbol) {
+    if (!symbol) return;
+    const listeners = estimateListeners[symbol];
+    if (!listeners || !listeners.length) return;
+    // call each callback then clear the list
+    listeners.slice().forEach(cb => {
+        try { cb(estimates[symbol]); } catch (e) { console.error(e); }
+    });
+    estimateListeners[symbol] = [];
+}
+
+function onEstimateReady(symbol, cb) {
+    if (!symbol || typeof cb !== "function") return;
+    // if estimate already exists, call immediately
+    if (estimates[symbol]) {
+        try { cb(estimates[symbol]); } catch (e) { console.error(e); }
+        return;
+    }
+    estimateListeners[symbol] = estimateListeners[symbol] || [];
+    estimateListeners[symbol].push(cb);
+}
+
+(async () => {
+    try {
+        // get initial data for all stocks
+        const values = {};
+        for (const stock of STOCK_SYMBOLS) {
+            const quote = await fetchQuote(stock.symbol, "1d", "1y");
+            if (quote) values[stock.symbol] = getCandles(quote);
+        }
+
+        const tasks = STOCK_SYMBOLS.map(stock => (async () => {
+            console.log(`Fetching AI estimate for ${stock.symbol}...`);
+            console.log("Candle data:", values[stock.symbol]);
+            const quote = await fetchQuote(stock.symbol, "1d", "1y");
+            const candles = getCandles(quote);
+            const res = await fetch("https://myproxy.uaena.io/api", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(
+                    {
+                        type: "ai",
+                        input: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock: ${stock.symbol} Candles:${JSON.stringify(candles)}`
+                    })
+            });
+
+            if (!res.ok) throw new Error(`AI fetch failed: ${res.status} ${res.statusText}`);
+            const data = await res.json();
+            if (data.error) throw new Error(`AI fetch error: ${data.error}`);
+
+            const text = String(data.output_text).trim();
+            const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
+
+            estimates[stock.symbol] = { resistance, support, target, reason };
+            notifyEstimateReady(stock.symbol);
+            console.log(`AI estimate for ${stock.symbol}:`, estimates[stock.symbol]);
+        })());
+        await Promise.allSettled(tasks);
+    } catch (e) {
+        console.log("AI fetch error:", e);
+    }
+})();
 
 document.addEventListener("DOMContentLoaded", function () {
     const stockSection = document.getElementById('stock-section');
@@ -30,13 +96,11 @@ document.addEventListener("DOMContentLoaded", function () {
         card.id = safeId;
 
         card.addEventListener("click", function () {
-            makeChart(stock.symbol);
+            currSymbol = stock.symbol;
+            makeChart();
             const stock_container = document.querySelector(".stock.container");
             stock_container.style.opacity = 1;
             stock_container.style.zIndex = 3;
-            const stock_name = document.getElementById("stock-name");
-            stock_name.textContent = stock.label;
-            currSymbol = stock.symbol;
             stock_background.classList.add("show");
         });
 
@@ -61,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function () {
     interval_buttons.forEach(btn => {
         btn.addEventListener("click", async () => {
             interval = btn.dataset.target;
-            const ok = await makeChart(currSymbol);
+            const ok = await makeChart();
             if (ok) setActive(interval_buttons, interval);
         });
     });
@@ -71,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
     range_buttons.forEach(btn => {
         btn.addEventListener("click", async () => {
             range = btn.dataset.target;
-            const ok = await makeChart(currSymbol);
+            const ok = await makeChart();
             if (ok) setActive(range_buttons, range);
         });
     });
@@ -118,7 +182,7 @@ async function fetchQuote(symbol, interval, range, includePrePost = false) {
 async function updateStockPrices() {
     await Promise.all(
         STOCK_SYMBOLS.map(async ({ symbol }) => {
-            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')} `;
+            const safeId = `stock-${symbol.replace(/[^a-z0-9]/gi, '-')}`;
             const priceElem = document.querySelector(`#${safeId} .stock-price`);
             if (!priceElem) return;
             try {
@@ -128,7 +192,7 @@ async function updateStockPrices() {
                     let price = meta.regularMarketPrice ?? meta.previousClose ?? null;
                     let prevClose = meta.previousClose ?? null;
                     if (price == null || prevClose == null) return null;
-                    const percentChange = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
+                    const percentChange = getPercentageChange(prevClose, price);
                     let color = percentChange > 0 ? "#3E9D45" : percentChange < 0 ? "#CA5C5C" : "#444";
                     let sign = percentChange > 0 ? "+" : "";
                     priceElem.innerHTML = `<span style="color:${color};"> ${price.toFixed(2)}<small>(${sign}${percentChange.toFixed(2)}%)</small></span> `;
@@ -142,21 +206,28 @@ async function updateStockPrices() {
     );
 }
 
-async function makeChart(symbol) {
-    if (!symbol) return false;
+function getPercentageChange(prev, curr) {
+    if (prev === 0) return 0;
+    return ((curr - prev) / prev) * 100;
+}
 
-    // dispose previous root if exists
-    if (root) {
-        try { root.dispose(); } catch (e) { console.warn("error disposing root", e); }
-        root = null;
-    }
+function getPriceChange(prev, curr) {
+    return curr - prev;
+}
 
-    const data = await fetchQuote(symbol, interval, range);
-    if (!data) {
-        console.warn("fetchQuote returned no data for", symbol);
-        return false;
-    }
+function getHighLow(candles) {
+    let high = -Infinity;
+    let low = Infinity;
 
+    candles.forEach(candle => {
+        if (candle.high > high) high = candle.high;
+        if (candle.low < low) low = candle.low;
+    })
+
+    return { high, low };
+}
+
+function getCandles(data) {
     const q = data.indicators?.quote?.[0] || {};
     const ts = data.timestamp || [];
     const intraday = interval.endsWith("m") || interval.endsWith("h");
@@ -181,7 +252,7 @@ async function makeChart(symbol) {
     }
 
     if (!candles.length) {
-        console.warn("no valid candle data for", symbol);
+        console.warn("no valid candle data for", currSymbol);
         return false;
     }
 
@@ -193,6 +264,85 @@ async function makeChart(symbol) {
         low: Number(d.low),
         close: Number(d.close)
     }));
+
+    return formatted;
+}
+async function makeChart() {
+    if (!currSymbol) return false;
+
+    // dispose previous root if exists
+    if (root) {
+        try { root.dispose(); } catch (e) { console.warn("error disposing root", e); }
+        root = null;
+    }
+
+    const data = await fetchQuote(currSymbol, interval, range);
+    if (!data) {
+        console.warn("fetchQuote returned no data for", currSymbol);
+        return false;
+    }
+    const q = data.indicators?.quote?.[0] || {};
+    const ts = data.timestamp || [];
+    const intraday = interval.endsWith("m") || interval.endsWith("h");
+
+    formatted = getCandles(data);
+
+    /* top container init */
+    const stock_name = document.getElementById("stock-name");
+    const current_price = document.getElementById("current-price");
+    const price_change = document.getElementById("price-change");
+    const percent_change = document.getElementById("percent-change");
+    const day_high = document.getElementById("day-high");
+    const day_low = document.getElementById("day-low");
+    const ai_support = document.getElementById("ai-support");
+    const ai_resistance = document.getElementById("ai-resistance");
+    const ai_target = document.getElementById("ai-target");
+
+    // reset AI fields
+    ai_support.textContent = "Analyzing stock...";
+    ai_resistance.textContent = "";
+    ai_target.textContent = "";
+
+    // get prev close
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startMs = startOfToday.getTime();
+    let prevClose = null;
+    for (let i = formatted.length - 1; i >= 0; i--) {
+        if (formatted[i].date < startMs) {
+            prevClose = formatted[i].close;
+            break;
+        }
+    }
+    if (prevClose == null) prevClose = data?.meta?.chartPreviousClose;
+
+    stock_name.textContent = data?.meta?.shortName || currSymbol.toUpperCase();
+    current_price.textContent = formatted[formatted.length - 1].close.toFixed(2);
+    if (prevClose != null) {
+        const change = getPriceChange(prevClose, formatted[formatted.length - 1].close);
+        const percent = getPercentageChange(prevClose, formatted[formatted.length - 1].close);
+        const color = change > 0 ? "#3E9D45" : change < 0 ? "#CA5C5C" : "#444";
+        price_change.textContent = `${change > 0 ? "+" : ""}${change.toFixed(2)}`;
+        percent_change.textContent = `(${percent.toFixed(2)}%)`;
+        price_change.style.color = color;
+        percent_change.style.color = color;
+        current_price.style.color = color;
+    } else {
+        price_change.textContent = "—";
+        percent_change.textContent = "—";
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayData = formatted.filter(point => {
+        const dateStr = new Date(point.date).toISOString().split('T')[0];
+        return dateStr === today;
+    });
+
+    const { high, low } = getHighLow(todayData.length ? todayData : formatted);
+    day_high.textContent = `H: ${high.toFixed(2)}`;
+    day_low.textContent = `L: ${low.toFixed(2)}`;
+
+    /* amCharts setup */
 
     root = am5.Root.new("stock-chart");
 
@@ -210,9 +360,9 @@ async function makeChart(symbol) {
     root.numberFormatter.set("numberFormat", "#,###.00");
 
     var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+        panX: true,           // allow horizontal pan
+        panY: true,           // allow vertical pan
         wheelY: "zoomX",
-        panX: true,
-        panY: true,
         height: am5.percent(100)
     }));
 
@@ -222,7 +372,7 @@ async function makeChart(symbol) {
         }),
         tooltip: am5.Tooltip.new(root, {}),
         numberFormat: "#,###.00",
-        extraTooltipPrecision: 2
+        extraTooltipPrecision: 2,
     }));
 
     const dateMsArr = formatted.map(d => {
@@ -243,7 +393,7 @@ async function makeChart(symbol) {
     }));
 
     var valueSeries = mainPanel.series.push(am5xy.CandlestickSeries.new(root, {
-        name: symbol.toUpperCase(),
+        name: currSymbol.toUpperCase(),
         valueXField: "date",
         valueYField: "close",
         highValueYField: "high",
@@ -283,10 +433,18 @@ async function makeChart(symbol) {
     }));
 
     const cursor = mainPanel.set("cursor", am5xy.XYCursor.new(root, {
-        behvior: "zoomXY",
-        yAxis: valueAxis,
+        behavior: "none",
         xAxis: dateAxis,
+        yAxis: valueAxis,
+        pinchable: true
     }));
+
+    cursor.setAll({
+        wheelable: true,
+        pinchable: true,   // allows pinch-to-zoom on mobile
+        panX: true,
+        panY: true
+    });
 
 
     /* technical indicators */
@@ -327,6 +485,72 @@ async function makeChart(symbol) {
         longPeriod: 26,
         signalPeriod: 9,
     }))
+
+    const resistanceSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
+        name: "Resistance",
+        valueYField: "value",
+        valueXField: "date",
+        xAxis: dateAxis,
+        yAxis: valueAxis,
+        stroke: am5.color(0xFF0000), // red line for resistance
+        strokeWidth: 2,
+        tooltip: am5.Tooltip.new(root, {
+            labelText: "Resistance: {valueY}"
+        })
+    }));
+
+    const supportSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
+        name: "Support",
+        valueYField: "value",
+        valueXField: "date",
+        xAxis: dateAxis,
+        yAxis: valueAxis,
+        stroke: am5.color(0x00FF00), // green line for support
+        strokeWidth: 2,
+        tooltip: am5.Tooltip.new(root, {
+            labelText: "Support: {valueY}"
+        })
+    }));
+
+    function applyEstimatesToChart(estimateObj) {
+        try {
+            if (!estimateObj) return;
+
+            const rVal = estimateObj.resistance;
+            const sVal = estimateObj.support;
+
+            const rLineData = formatted.map(d => ({ date: d.date, value: rVal }));
+            const sLineData = formatted.map(d => ({ date: d.date, value: sVal }));
+
+            // setAll updates the data (will redraw)
+            resistanceSeries.data.setAll(rLineData);
+            supportSeries.data.setAll(sLineData);
+
+            // update UI labels if present
+            ai_resistance.textContent = "Resistance: " + rVal;
+            ai_support.textContent = "Support: " + sVal;
+            ai_target.textContent = "Target: " + estimateObj.target;
+
+        } catch (e) {
+            console.error("Failed applying estimates to chart:", e);
+        }
+    }
+
+    // apply immediately if we already have estimates
+    if (estimates[currSymbol]) {
+        applyEstimatesToChart(estimates[currSymbol]);
+    } else {
+        // indicate waiting status
+        ai_support.textContent = "Analyzing stock...";
+        // register a one-time listener — will apply when notifyEstimateReady(symbol) runs
+        const thisSymbol = currSymbol;
+        const listener = (estimateObj) => {
+            if (thisSymbol !== currSymbol) return;
+            if (!root) return;
+            applyEstimatesToChart(estimateObj);
+        };
+        onEstimateReady(currSymbol, listener);
+    }
 
     /* set colors of chart */
     // axes - labels
@@ -390,6 +614,8 @@ async function makeChart(symbol) {
         strokeOpacity: 1
     });
     // indicator styles
+
+
 
 
     return true;

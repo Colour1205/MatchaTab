@@ -469,6 +469,8 @@ body {
     font-size: 11px;
     width: 100%;
     height: 100%;
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y pinch-zoom;
 }
 
 .stock-container-inner {
@@ -574,6 +576,26 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
+}
+
+.stock-container-top {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+#stock-ai-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
+}
+
+#stock-info-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 8px;
 }
 
 /* news section */
