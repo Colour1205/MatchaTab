@@ -13,11 +13,42 @@ const STOCK_SYMBOLS = [
 
 const estimates = {};
 const estimateListeners = {};
+const CACHE_KEY = "stock_ai_estimates_v1";
 
 let interval = "1d";
 let range = "1y";
 let currSymbol = null;
 let root = null;
+
+function todayDateStr() {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+}
+
+function loadCachedEstimates() {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        return JSON.parse(raw) || {};
+    } catch (e) {
+        console.warn("Failed to parse cached estimates", e);
+        return {};
+    }
+}
+
+function saveCachedEstimate(symbol, estimateObj) {
+    try {
+        const all = loadCachedEstimates();
+        all[symbol] = { ...estimateObj, date: todayDateStr() };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(all));
+    } catch (e) {
+        console.warn("Failed to save cached estimate", e);
+    }
+}
+
+function isFreshCached(cachedObj) {
+    if (!cachedObj || !cachedObj.date) return false;
+    return cachedObj.date === todayDateStr();
+}
 
 function notifyEstimateReady(symbol) {
     if (!symbol) return;
@@ -43,6 +74,22 @@ function onEstimateReady(symbol, cb) {
 
 (async () => {
     try {
+        // load from cache first
+        const cached = loadCachedEstimates();
+        for (const symbol of Object.keys(cached)) {
+            const val = cached[symbol];
+            if (isFreshCached(val)) {
+                estimates[symbol] = {
+                    resistance: val.resistance,
+                    support: val.support,
+                    target: val.target,
+                    reason: val.reason
+                };
+                console.log(`Using cached fresh estimate for ${symbol}`, estimates[symbol]);
+                notifyEstimateReady(symbol);
+            }
+        }
+
         // get initial data for all stocks
         const values = {};
         for (const stock of STOCK_SYMBOLS) {
@@ -50,32 +97,37 @@ function onEstimateReady(symbol, cb) {
             if (quote) values[stock.symbol] = getCandles(quote);
         }
 
-        const tasks = STOCK_SYMBOLS.map(stock => (async () => {
-            console.log(`Fetching AI estimate for ${stock.symbol}...`);
-            console.log("Candle data:", values[stock.symbol]);
-            const quote = await fetchQuote(stock.symbol, "1d", "1y");
-            const candles = getCandles(quote);
-            const res = await fetch("https://myproxy.uaena.io/api", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(
-                    {
-                        type: "ai",
-                        input: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock: ${stock.symbol} Candles:${JSON.stringify(candles)}`
-                    })
-            });
+        const tasks = STOCK_SYMBOLS
+            .filter(s => !(estimates[s.symbol] && estimates[s.symbol].resistance))
+            .map(stock => (async () => {
+                console.log(`Fetching AI estimate for ${stock.symbol}...`);
+                console.log("Candle data:", values[stock.symbol]);
+                const quote = await fetchQuote(stock.symbol, "1d", "1y");
+                const candles = getCandles(quote);
+                const res = await fetch("https://myproxy.uaena.io/api", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        {
+                            type: "ai",
+                            input: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock: ${stock.symbol} Candles:${JSON.stringify(candles)}`
+                        })
+                });
 
-            if (!res.ok) throw new Error(`AI fetch failed: ${res.status} ${res.statusText}`);
-            const data = await res.json();
-            if (data.error) throw new Error(`AI fetch error: ${data.error}`);
+                if (!res.ok) throw new Error(`AI fetch failed: ${res.status} ${res.statusText}`);
+                const data = await res.json();
+                if (data.error) throw new Error(`AI fetch error: ${data.error}`);
 
-            const text = String(data.output_text).trim();
-            const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
+                const text = String(data.output_text).trim();
+                const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
 
-            estimates[stock.symbol] = { resistance, support, target, reason };
-            notifyEstimateReady(stock.symbol);
-            console.log(`AI estimate for ${stock.symbol}:`, estimates[stock.symbol]);
-        })());
+                const estimateObj = { resistance, support, target, reason };
+                estimates[stock.symbol] = estimateObj;
+
+                saveCachedEstimate(stock.symbol, estimateObj);
+                notifyEstimateReady(stock.symbol);
+                console.log(`AI estimate for ${stock.symbol}:`, estimates[stock.symbol]);
+            })());
         await Promise.allSettled(tasks);
     } catch (e) {
         console.log("AI fetch error:", e);
@@ -362,8 +414,10 @@ async function makeChart() {
     var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
         panX: true,           // allow horizontal pan
         panY: true,           // allow vertical pan
-        wheelY: "zoomX",
-        height: am5.percent(100)
+        wheelY: "zoomXY",
+        height: am5.percent(100),
+        pinchZoomX: true,
+        pinchZoomY: true
     }));
 
     var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
@@ -372,7 +426,12 @@ async function makeChart() {
         }),
         tooltip: am5.Tooltip.new(root, {}),
         numberFormat: "#,###.00",
+        maxDeviation: 0,
         extraTooltipPrecision: 2,
+        strictMinMax: true,
+        autoZoom: false,
+        extraMax: 0.08,
+        extraMin: 0.02,
     }));
 
     const dateMsArr = formatted.map(d => {
@@ -388,7 +447,10 @@ async function makeChart() {
     var dateAxis = mainPanel.xAxes.push(am5xy.GaplessDateAxis.new(root, {
         baseInterval: baseInterval,
         groupData: groupData,
-        renderer: am5xy.AxisRendererX.new(root, {}),
+        renderer: am5xy.AxisRendererX.new(root, {
+            pan: "zoom"
+        }),
+        maxDeviation: 1,
         tooltip: am5.Tooltip.new(root, {})
     }));
 
@@ -440,8 +502,6 @@ async function makeChart() {
     }));
 
     cursor.setAll({
-        wheelable: true,
-        pinchable: true,   // allows pinch-to-zoom on mobile
         panX: true,
         panY: true
     });
