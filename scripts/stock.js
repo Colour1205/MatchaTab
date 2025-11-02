@@ -38,16 +38,18 @@ function loadCachedEstimates() {
 function saveCachedEstimate(symbol, estimateObj) {
     try {
         const all = loadCachedEstimates();
-        all[symbol] = { ...estimateObj, date: todayDateStr() };
+        all[symbol] = { ...estimateObj, ts: Date.now() }; // save ms timestamp
         localStorage.setItem(CACHE_KEY, JSON.stringify(all));
     } catch (e) {
         console.warn("Failed to save cached estimate", e);
     }
 }
-
+// cache has 24 hour validity
 function isFreshCached(cachedObj) {
-    if (!cachedObj || !cachedObj.date) return false;
-    return cachedObj.date === todayDateStr();
+    if (!cachedObj || !cachedObj.ts) return false;
+    const ageMs = Date.now() - cachedObj.ts;
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    return ageMs < ONE_DAY;
 }
 
 function notifyEstimateReady(symbol) {
@@ -373,7 +375,7 @@ async function makeChart() {
     if (prevClose != null) {
         const change = getPriceChange(prevClose, formatted[formatted.length - 1].close);
         const percent = getPercentageChange(prevClose, formatted[formatted.length - 1].close);
-        const color = change > 0 ? "#3E9D45" : change < 0 ? "#CA5C5C" : "#444";
+        const color = change > 0 ? "#3E9D45" : change < 0 ? "#CA5C5C" : "#a1a1a1ff";
         price_change.textContent = `${change > 0 ? "+" : ""}${change.toFixed(2)}`;
         percent_change.textContent = `(${percent.toFixed(2)}%)`;
         price_change.style.color = color;
@@ -414,10 +416,10 @@ async function makeChart() {
     var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
         panX: true,           // allow horizontal pan
         panY: true,           // allow vertical pan
-        wheelY: "zoomXY",
+        wheelY: "zoomX",
         height: am5.percent(100),
         pinchZoomX: true,
-        pinchZoomY: true
+        pinchZoomY: false
     }));
 
     var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
@@ -465,9 +467,25 @@ async function makeChart() {
         xAxis: dateAxis,
         yAxis: valueAxis,
         groupData: groupData,
-        legendValueText: "{valueY}",
-        tooltip: am5.Tooltip.new(root, {})
     }));
+
+    var tooltip = am5.Tooltip.new(root, {
+        getFillFromSprite: false,
+        autoTextColor: false,
+        labelText: "O: {openValueY}\nH: {highValueY}\nL: {lowValueY}\nC: {valueY}",
+    });
+
+    tooltip.get("background").setAll({
+        fill: am5.color(0x000000),
+        stroke: am5.color(0xffffff),
+        fillOpacity: 0.7,
+    });
+
+    tooltip.label.setAll({
+        fill: am5.color(0xffffff),
+    })
+
+    valueSeries.set("tooltip", tooltip);
 
     const riseColor = "rgba(100, 210, 92, 1)";
     const dropColor = "rgba(219, 89, 63, 1)";
@@ -486,7 +504,7 @@ async function makeChart() {
         width: am5.percent(80)
     });
 
-    valueSeries.get("tooltip").label.set("text", "Open: {openValueY}\nHigh: {highValueY}\nLow: {lowValueY}\nClose: {valueY}")
+
     valueSeries.data.setAll(formatted);
     stockChart.set("stockSeries", valueSeries);
 
@@ -494,18 +512,39 @@ async function makeChart() {
         stockChart: stockChart
     }));
 
+    let latestPriceRange;
+    function updateLatestPriceLine(price) {
+        if (!valueAxis) return; // ensure valueAxis exists
+
+        // Remove old range if it exists
+        if (latestPriceRange) valueAxis.axisRanges.removeValue(latestPriceRange);
+
+        // Create new axis range at current price
+        latestPriceRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
+            value: price
+        }));
+
+        latestPriceRange.get("grid").setAll({
+            stroke: am5.color(0xFFA500), // white line for current price
+            strokeWidth: 1,
+            strokeDasharray: [2, 2], // optional dashed line
+            strokeOpacity: 1
+        });
+
+        latestPriceRange.get("label").setAll({
+            text: price.toFixed(2),
+            fill: am5.color(0xFFA500),
+            fontWeight: "bold",
+        });
+    }
+
+    updateLatestPriceLine(formatted[formatted.length - 1].close);
+
     const cursor = mainPanel.set("cursor", am5xy.XYCursor.new(root, {
         behavior: "none",
         xAxis: dateAxis,
         yAxis: valueAxis,
-        pinchable: true
     }));
-
-    cursor.setAll({
-        panX: true,
-        panY: true
-    });
-
 
     /* technical indicators */
     let period = [
@@ -546,54 +585,54 @@ async function makeChart() {
         signalPeriod: 9,
     }))
 
-    const resistanceSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-        name: "Resistance",
-        valueYField: "value",
-        valueXField: "date",
-        xAxis: dateAxis,
-        yAxis: valueAxis,
-        stroke: am5.color(0xFF0000), // red line for resistance
-        strokeWidth: 2,
-        tooltip: am5.Tooltip.new(root, {
-            labelText: "Resistance: {valueY}"
-        })
-    }));
-
-    const supportSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-        name: "Support",
-        valueYField: "value",
-        valueXField: "date",
-        xAxis: dateAxis,
-        yAxis: valueAxis,
-        stroke: am5.color(0x00FF00), // green line for support
-        strokeWidth: 2,
-        tooltip: am5.Tooltip.new(root, {
-            labelText: "Support: {valueY}"
-        })
-    }));
+    let resistanceRange, supportRange;
 
     function applyEstimatesToChart(estimateObj) {
-        try {
-            if (!estimateObj) return;
+        if (!estimateObj) return;
 
-            const rVal = estimateObj.resistance;
-            const sVal = estimateObj.support;
+        const rVal = Number(estimateObj.resistance);
+        const sVal = Number(estimateObj.support);
 
-            const rLineData = formatted.map(d => ({ date: d.date, value: rVal }));
-            const sLineData = formatted.map(d => ({ date: d.date, value: sVal }));
+        // Remove old ranges if they exist
+        if (resistanceRange) valueAxis.axisRanges.removeValue(resistanceRange);
+        if (supportRange) valueAxis.axisRanges.removeValue(supportRange);
 
-            // setAll updates the data (will redraw)
-            resistanceSeries.data.setAll(rLineData);
-            supportSeries.data.setAll(sLineData);
+        // Resistance line
+        resistanceRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
+            value: rVal
+        }));
+        resistanceRange.get("grid").setAll({
+            stroke: am5.color(0xFF0000),
+            strokeWidth: 2,
+            strokeOpacity: 0.7
+        });
+        resistanceRange.get("label").setAll({
+            text: rVal.toFixed(2),
+            fill: am5.color(0xFF0000),
+            inside: false,
+            fontWeight: "bold",
+        });
 
-            // update UI labels if present
-            ai_resistance.textContent = "Resistance: " + rVal;
-            ai_support.textContent = "Support: " + sVal;
-            ai_target.textContent = "Target: " + estimateObj.target;
+        // Support line
+        supportRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
+            value: sVal
+        }));
+        supportRange.get("grid").setAll({
+            stroke: am5.color(0x00FF00),
+            strokeWidth: 2,
+            strokeOpacity: 0.7
+        });
+        supportRange.get("label").setAll({
+            text: sVal.toFixed(2),
+            fill: am5.color(0x00FF00),
+            inside: false,
+            fontWeight: "bold",
+        });
 
-        } catch (e) {
-            console.error("Failed applying estimates to chart:", e);
-        }
+        // update UI labels if present
+        ai_resistance.textContent = "Resistance: " + estimateObj.resistance;
+        ai_support.textContent = "Support: " + estimateObj.support;
+        ai_target.textContent = "Target: " + estimateObj.target;
     }
 
     // apply immediately if we already have estimates
@@ -655,12 +694,14 @@ async function makeChart() {
     cursor.lineX.setAll({
         stroke: am5.color(0xffffff), // white
         strokeWidth: 1,
-        strokeOpacity: 1
+        strokeOpacity: 1,
+        strokeDasharray: []
     });
     cursor.lineY.setAll({
         stroke: am5.color(0xffffff), // white
         strokeWidth: 1,
-        strokeOpacity: 1
+        strokeOpacity: 1,
+        strokeDasharray: []
     });
 
     MACD.panel.get("cursor").lineX.setAll({
@@ -674,9 +715,6 @@ async function makeChart() {
         strokeOpacity: 1
     });
     // indicator styles
-
-
-
 
     return true;
 }
