@@ -13,7 +13,7 @@ const STOCK_SYMBOLS = [
 
 const estimates = {};
 const estimateListeners = {};
-const CACHE_KEY = "stock_ai_estimates_v1";
+const CACHE_KEY = "stock_ai_estimates_v2";
 
 let interval = "1d";
 let range = "1y";
