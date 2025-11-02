@@ -19,7 +19,7 @@ html,
 body {
     margin: 0;
     padding: 0;
-    height: 100vh;
+    height: 100%;
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     display: flex;
     flex-direction: column;
@@ -79,7 +79,6 @@ body {
     width: 100vw;
     max-width: 100vw;
     overflow-y: auto;
-    overflow-x: hidden;
     scrollbar-width: none;
     padding-top: 12%;
     padding-bottom: 5%;
@@ -87,7 +86,7 @@ body {
     bottom: 0px;
     transition-duration: 1.4s;
     transition-property: transform;
-    transition-timing-function: cubic-bezier(0, .98, .49, 1);
+    transition-timing-function: cubic-bezier(0, .98, .49, 1)
 }
 
 .information-wrapper::-webkit-scrollbar {
@@ -98,7 +97,7 @@ body {
     font-size: clamp(5rem, min(13vw, 13vh), 7rem);
     font-weight: 900;
     color: var(--dark-text-primary);
-    text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 1;
 }
 
@@ -122,7 +121,7 @@ body {
     justify-content: center;
     align-items: center;
     border-radius: 22px;
-    box-shadow: 0 0 20px var(--dark-shadow);
+    box-shadow: 0 4px 8px var(--dark-shadow);
     background: var(--backdrop-color);
     overflow: hidden;
     width: 100%;
@@ -176,7 +175,7 @@ body {
     padding-top: 7px;
     padding-bottom: 7px;
     margin-right: 10px;
-    border: none;
+    border: 1px solid var(--dark-divider);
     background: rgba(50, 50, 65, 0.6);
     border-radius: 13px;
     color: var(--dark-text-secondary);
@@ -198,17 +197,18 @@ body {
     flex-shrink: 0;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 10px var(--dark-shadow);
+    box-shadow: 0 2px 10px var(--dark-shadow);
     transition-property: transform, box-shadow;
     transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
     backdrop-filter: var(--backdrop-blur);
+    border: 1px solid var(--dark-divider);
 }
 
 #send-button:hover {
     transform: scale(1.05);
     background: rgba(80, 85, 120, 0.7);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
 
 #send-button:active {
@@ -258,6 +258,7 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 #quick-links-section::-webkit-scrollbar {
@@ -276,7 +277,7 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--dark-card-bg);
-    box-shadow: 0 1px 8px var(--dark-shadow);
+    box-shadow: 0 4px 8px var(--dark-shadow);
     transition: all 0.3s ease;
     position: relative;
     user-select: none;
@@ -286,7 +287,8 @@ body {
 
 .quick-link:hover {
     background: var(--dark-card-hover);
-    box-shadow: 0 3px 12px rgba(125, 140, 255, 0.15);
+    box-shadow: 0 5px 20px rgba(125, 140, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .quick-link-expander {
@@ -298,7 +300,6 @@ body {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
     overflow: hidden;
     transition: var(--transition-expand);
-    ;
 }
 
 .quick-link-expander.center {
@@ -360,7 +361,7 @@ body {
     background: var(--dark-context-bg);
     backdrop-filter: var(--backdrop-blur);
     border-radius: 17px;
-    box-shadow: 0 2px 16px var(--dark-shadow);
+    box-shadow: 0 4px 20px var(--dark-shadow);
     display: none;
     flex-direction: column;
     padding: 0;
@@ -384,6 +385,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     outline: none;
+    font-weight: 500;
 }
 
 .quick-link-context button:hover {
@@ -431,6 +433,7 @@ body {
     min-width: 155px;
     width: 155px;
     max-width: 155px;
+    box-shadow: 0 3px 15px var(--dark-shadow);
     border: 1px solid var(--dark-divider);
 }
 
@@ -451,7 +454,7 @@ body {
 }
 
 .stock.container {
-    width: 60vw;
+    width: 90vw;
     height: 80vh;
     position: fixed;
     display: flex;
@@ -461,7 +464,10 @@ body {
     background: rgba(2, 3, 7, 0.923);
     backdrop-filter: blur(7px);
     border-radius: 25px;
-    padding: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-right: 5px;
+    padding-left: 5px;
     overflow: hidden;
     color: white;
     border: 3px solid var(--dark-accent-hover);
@@ -471,6 +477,8 @@ body {
     font-size: 11px;
     width: 100%;
     height: 100%;
+    touch-action: none;
+    overscroll-behavior: contain;
 }
 
 .stock-container-inner {
@@ -507,7 +515,7 @@ body {
 
 .stock-container-inner.button.active {
     background: rgba(204, 204, 255, 0.77);
-    box-shadow: 0 0 8px rgba(96, 96, 169, 0.267);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
     transform: scale(1.1);
     color: black;
 }
@@ -530,9 +538,10 @@ body {
 .button {
     border: none;
     cursor: pointer;
-    box-shadow: 0 0 8px rgba(60, 60, 77, 0.459);
-    transition: all 0.2s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    transition: all 0.3s ease;
+    border: 1px solid var(--dark-divider);
+    backdrop-filter: var(--backdrop-blur);
 }
 
 .button:hover {
@@ -575,6 +584,38 @@ body {
     height: 100%;
 }
 
+.stock-container-top {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    height: auto;
+    gap: 4px;
+    margin-left: 15px;
+    padding-right: 55px;
+    margin-top: 5px;
+}
+
+#stock-info-container,
+#stock-ai-container {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+#stock-info-container::-webkit-scrollbar,
+#stock-ai-container::-webkit-scrollbar {
+    display: none;
+}
+
+.stock-top-item {
+    margin: 0;
+}
+
 .news-section {
     display: flex;
     flex-direction: column;
@@ -594,7 +635,7 @@ body {
     padding: 12px 16px;
     background: var(--dark-card-bg);
     border-radius: 16px;
-    box-shadow: 0 1px 8px var(--dark-shadow);
+    box-shadow: 0 3px 15px var(--dark-shadow);
     transition-property: all;
     transition-duration: 0.2s;
     transition-timing-function: ease;
@@ -604,8 +645,9 @@ body {
 }
 
 .news-card:hover {
-    box-shadow: 0 3px 16px rgba(125, 140, 255, 0.15);
+    box-shadow: 0 5px 20px rgba(125, 140, 255, 0.15);
     background: var(--dark-card-hover);
+    transform: translateY(-2px);
 }
 
 .news-title {
@@ -653,6 +695,8 @@ body {
     transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
     justify-content: center;
     align-items: center;
+    box-shadow: 0 2px 10px var(--dark-shadow);
+    border: 1px solid var(--dark-divider);
 }
 
 #settings-button:hover {
@@ -722,7 +766,7 @@ body {
     background: rgba(35, 35, 45, 0.8);
     border-radius: 35px;
     padding: 20px;
-    box-shadow: 0 0 20px var(--dark-shadow);
+    box-shadow: 0 4px 20px var(--dark-shadow);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -754,6 +798,7 @@ body {
     box-shadow: 0 0 8px var(--dark-shadow);
     color: var(--dark-text-primary);
     font-weight: 600;
+    margin-bottom: 10px;
 }
 
 #wallpaper-button:hover {
@@ -815,7 +860,7 @@ select {
     color: #E6EAFF;
     padding: 10px;
     border-radius: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--dark-divider);
     backdrop-filter: var(--backdrop-blur);
 }
 
@@ -844,14 +889,18 @@ select option {
 
     .stock.container {
         width: 100vw;
-        max-width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
+        height: calc(var(--vh, 1vh) * 100 + 1px);
         border-radius: 0;
         top: 0;
         left: 0;
         padding: 10px;
         box-sizing: border-box;
+        border: none;
+        padding: 0;
+    }
+
+    .stock-container-inner {
+        margin-bottom: 10px;
     }
 
     .close.button {
@@ -921,13 +970,17 @@ select option {
 
     .stock.container {
         width: 100vw;
-        max-width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
+        max-height: calc(var(--vh, 1vh) * 100);
         border-radius: 0;
         top: 0;
         left: 0;
         box-sizing: border-box;
+        border: none;
+        padding: 0;
+    }
+
+    .stock-container-inner {
+        margin-bottom: 10px;
     }
 
     .stock-container-inner {
