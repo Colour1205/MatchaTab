@@ -77,7 +77,7 @@ function onEstimateReady(symbol, cb) {
         // load from cache first
         const cached = loadCachedEstimates();
         for (const symbol of Object.keys(cached)) {
-            const val = cached[symbol];
+            const val = null;
             if (isFreshCached(val)) {
                 estimates[symbol] = {
                     resistance: val.resistance,
@@ -104,21 +104,24 @@ function onEstimateReady(symbol, cb) {
                 console.log("Candle data:", values[stock.symbol]);
                 const quote = await fetchQuote(stock.symbol, "1d", "1y");
                 const candles = getCandles(quote);
-                const res = await fetch("https://myproxy.uaena.io/api", {
+                const res = await fetch("http://127.0.0.1:11434/api/generate", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(
-                        {
-                            type: "ai",
-                            input: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock: ${stock.symbol} Candles:${JSON.stringify(candles)}`
-                        })
+                    body: JSON.stringify({
+                        model: "deepseek-r1:1.5b",
+                        prompt: `Return exactly one line of CSV with **four fields only**, in this order: resistance (2 decimals), support (2 decimals), target_rating (one of: strong sell, sell, hold, buy, strong buy), reason (a full plain English paragraph). Do NOT include any labels, quotes, headers, or extra text. Always return numbers for resistance and support — never N/A. Example output: 444.29,436.21,strong sell,The stock shows a strong downward trend with resistance at 444.29 and support at 436.21, indicating a strong sell recommendation.
+Stock: ${currSymbol} Candles:${JSON.stringify(candles)}
+
+`,
+                        stream: false,
+                    })
                 });
 
                 if (!res.ok) throw new Error(`AI fetch failed: ${res.status} ${res.statusText}`);
                 const data = await res.json();
                 if (data.error) throw new Error(`AI fetch error: ${data.error}`);
-
-                const text = String(data.output_text).trim();
+                console.log(data);
+                const text = String(data.response).trim();
                 const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
 
                 const estimateObj = { resistance, support, target, reason };
