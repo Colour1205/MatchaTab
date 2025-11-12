@@ -130,7 +130,7 @@ function onEstimateReady(symbol, cb) {
 
                 saveCachedEstimate(stock.symbol, estimateObj);
                 notifyEstimateReady(stock.symbol);
-                console.log(`AI estimate for ${stock.symbol}:`, estimates[stock.symbol]);
+                console.log(`AI estimate for ${stock.symbol}:`, estimates[stock.symbol], data.cached);
             })());
         await Promise.allSettled(tasks);
     } catch (e) {
