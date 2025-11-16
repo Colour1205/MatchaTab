@@ -49,7 +49,8 @@ function isFreshCached(cachedObj) {
     if (!cachedObj || !cachedObj.ts) return false;
     const ageMs = Date.now() - cachedObj.ts;
     const ONE_DAY = 24 * 60 * 60 * 1000;
-    return ageMs < ONE_DAY;
+    const one_sec = 1000;
+    return ageMs < one_sec;
 }
 
 function notifyEstimateReady(symbol) {
@@ -110,7 +111,7 @@ function onEstimateReady(symbol, cb) {
                         {
                             type: "ai",
                             key: stock.symbol,
-                            update: isFreshCached(cached[stock.symbol]),
+                            update: !isFreshCached(cached[stock.symbol]),
                             instruction: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English, no commas). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock.`,
                             input: `${stock.symbol} Candles:${JSON.stringify(candles)}`
                         })
