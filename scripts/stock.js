@@ -13,50 +13,18 @@ const STOCK_SYMBOLS = [
 
 const estimates = {};
 const estimateListeners = {};
-const CACHE_KEY = "stock_ai_estimates_v2";
 
 let interval = "1d";
 let range = "1y";
 let currSymbol = null;
 let root = null;
 
-function todayDateStr() {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-}
-
-function loadCachedEstimates() {
-    try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        return JSON.parse(raw) || {};
-    } catch (e) {
-        console.warn("Failed to parse cached estimates", e);
-        return {};
-    }
-}
-
-function saveCachedEstimate(symbol, estimateObj) {
-    try {
-        const all = loadCachedEstimates();
-        all[symbol] = { ...estimateObj, ts: Date.now() }; // save ms timestamp
-        localStorage.setItem(CACHE_KEY, JSON.stringify(all));
-    } catch (e) {
-        console.warn("Failed to save cached estimate", e);
-    }
-}
-// cache has 24 hour validity
-function isFreshCached(cachedObj) {
-    if (!cachedObj || !cachedObj.ts) return false;
-    const ageMs = Date.now() - cachedObj.ts;
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    return ageMs < ONE_DAY;
-}
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function notifyEstimateReady(symbol) {
     if (!symbol) return;
     const listeners = estimateListeners[symbol];
     if (!listeners || !listeners.length) return;
-    // call each callback then clear the list
     listeners.slice().forEach(cb => {
         try { cb(estimates[symbol]); } catch (e) { console.error(e); }
     });
@@ -65,7 +33,6 @@ function notifyEstimateReady(symbol) {
 
 function onEstimateReady(symbol, cb) {
     if (!symbol || typeof cb !== "function") return;
-    // if estimate already exists, call immediately
     if (estimates[symbol]) {
         try { cb(estimates[symbol]); } catch (e) { console.error(e); }
         return;
@@ -74,80 +41,103 @@ function onEstimateReady(symbol, cb) {
     estimateListeners[symbol].push(cb);
 }
 
+async function requestAiEstimate(symbol, candles, update) {
+    try {
+        console.log(`requesting ${symbol}, update: ${update}`)
+        const res = await fetch("https://myproxy.uaena.io/api", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                type: "ai",
+                key: symbol,
+                update,
+                instructions: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English, no commas). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock.`,
+                input: `${symbol} Candles:${JSON.stringify(candles)}`
+            })
+        });
+
+        if (!res.ok) {
+            console.error(`AI fetch failed for ${symbol}: ${res.status} ${res.statusText}`);
+            return null;
+        }
+
+        const data = await res.json();
+        if (data.error) {
+            console.error(`AI fetch error for ${symbol}:`, data.error);
+            return null;
+        }
+
+        if (!data.output_text) {
+            console.error(`AI response missing output_text for ${symbol}`, data);
+            return null;
+        }
+
+        const text = String(data.output_text).trim();
+        const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
+        const estimateObj = { resistance, support, target, reason };
+
+        return {
+            estimate: estimateObj,
+            time: data.time || null
+        };
+    } catch (e) {
+        console.error("AI fetch error for", symbol, e);
+        return null;
+    }
+}
+
 (async () => {
     try {
-        // load from cache first
-        const cached = loadCachedEstimates();
-        for (const symbol of Object.keys(cached)) {
-            const val = cached[symbol];
-            if (isFreshCached(val)) {
-                estimates[symbol] = {
-                    resistance: val.resistance,
-                    support: val.support,
-                    target: val.target,
-                    reason: val.reason
-                };
-                notifyEstimateReady(symbol);
-            }
-        }
-
-        // get initial data for all stocks
-        const values = {};
-        for (const stock of STOCK_SYMBOLS) {
+        const tasks = STOCK_SYMBOLS.map(stock => (async () => {
             const quote = await fetchQuote(stock.symbol, "1d", "1y");
-            if (quote) values[stock.symbol] = getCandles(quote);
-        }
+            const candles = quote ? getCandles(quote) : null;
+            if (!candles || !candles.length) return;
 
-        const tasks = STOCK_SYMBOLS
-            .filter(s => !(estimates[s.symbol] && estimates[s.symbol].resistance))
-            .map(stock => (async () => {
-                const quote = await fetchQuote(stock.symbol, "1d", "1y");
-                const candles = getCandles(quote);
-                console.log(`analyzing ${stock.symbol}`)
-                const res = await fetch("https://myproxy.uaena.io/api", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(
-                        {
-                            type: "ai",
-                            key: stock.symbol,
-                            update: !isFreshCached(cached[stock.symbol]),
-                            instructions: `Return exactly one line of plain text, comma-separated, with these four fields in order: resistance (number with 2 decimal places or "N/A"), support (number with 2 decimal places or "N/A"), target_rating (one word: "strong sell", "sell", "hold", "buy", or "strong buy"), and reason (a full explanatory paragraph in plain English, no commas). Separate fields with commas and do not include any extra text or labels. All numeric fields must have exactly two decimal places. If a numeric value cannot be determined, put "N/A". The target_rating must be one of: strong sell, sell, hold, buy, strong buy. The reason must be thorough, easy to understand, in plain text only, without any Markdown, code blocks, LaTeX, or bullet points. Avoid jargon and explain simply. If you cannot determine values, return: N/A,N/A,N/A, with a reason explaining why they cannot be determined. The reason should explain how resistance and support were estimated from the provided candle data and any indicators used (please use atleast two of the common indicators, compute and analyze), the market sentiment, relevant company events, and any other major factors considered. Explain the target_rating based on volatility and trend analysis. For example, if a stock is volatile, target rating should be short term, and vice versa. your estimated numbers and rating should have a time period base don the relative time interval/range of the candles given to you. if the support and resistance is too close relative to how much stock price changes, it is useless, so reanalyze on a longer period. If using dates, render them in human-readable format, for example "Oct 31, 2025". End the reason by restating the recommended action implied by the target_rating.Stock.`,
-                            input: `${stock.symbol} Candles:${JSON.stringify(candles)}`
-                        })
-                });
+            const first = await requestAiEstimate(stock.symbol, candles, false);
+            if (!first) return;
 
-                console.log(data.output_text);
+            estimates[stock.symbol] = first.estimate;
+            notifyEstimateReady(stock.symbol);
 
-                if (!res.ok) throw new Error(`AI fetch failed: ${res.status} ${res.statusText}`);
-                const data = await res.json();
-                if (data.error) throw new Error(`AI fetch error: ${data.error}`);
+            let fresh = false;
+            if (first.time) {
+                const t = new Date(first.time).getTime();
+                if (!Number.isNaN(t)) {
+                    const ageMs = Date.now() - t;
+                    fresh = ageMs < ONE_DAY_MS;
+                }
+            }
 
-                const text = String(data.output_text).trim();
-                const [resistance, support, target, reason] = text.split(",").map(s => s.trim());
+            if (fresh) {
+                console.log(`${stock.symbol} is fresh`);
+                return;
+            }
 
-                const estimateObj = { resistance, support, target, reason };
-                estimates[stock.symbol] = estimateObj;
+            console.log(`${stock.symbol} has expired, re-requesting`);
+            const updated = await requestAiEstimate(stock.symbol, candles, true);
+            if (!updated) return;
 
-                saveCachedEstimate(stock.symbol, estimateObj);
-                notifyEstimateReady(stock.symbol);
-            })());
+            console.log(`${stock.symbol} has updated`);
+
+            estimates[stock.symbol] = updated.estimate;
+            notifyEstimateReady(stock.symbol);
+        })());
+
         await Promise.allSettled(tasks);
     } catch (e) {
-        console.log("AI fetch error:", e);
+        console.log("AI preload error:", e);
     }
 })();
+
 
 document.addEventListener("DOMContentLoaded", function () {
     const stockSection = document.getElementById('stock-section');
     const stock_background = document.getElementById("stock-background");
     if (!stockSection) return;
 
-    // create stock buttons
     STOCK_SYMBOLS.forEach(stock => {
         const card = document.createElement('button');
         card.className = 'stock-card button';
-        // generate safe id based on symbol
         const safeId = `stock-${stock.symbol.replace(/[^a-z0-9]/gi, '-')}`;
         card.id = safeId;
 
@@ -167,7 +157,6 @@ document.addEventListener("DOMContentLoaded", function () {
         stockSection.appendChild(card);
     });
 
-    // helper to activate selected interval/range button
     function setActive(btns, value) {
         btns.forEach(b => {
             const on = b.dataset.target === value;
@@ -176,7 +165,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // interval switch
     const interval_buttons = document.querySelectorAll(".stock-container-inner.button.interval");
     interval_buttons.forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -186,7 +174,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // range switch
     const range_buttons = document.querySelectorAll(".stock-container-inner.button.range");
     range_buttons.forEach(btn => {
         btn.addEventListener("click", async () => {
@@ -196,7 +183,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // set defaults buttons to active
     setActive(interval_buttons, interval);
     setActive(range_buttons, range);
 
@@ -215,15 +201,13 @@ document.addEventListener("DOMContentLoaded", function () {
         stock_background.classList.remove("show");
     });
 
-    updateStockPrices(); // initial fetch
-    setInterval(updateStockPrices, 10000); // refresh every 10 seconds
+    updateStockPrices();
+    setInterval(updateStockPrices, 10000);
 });
-
 
 async function fetchQuote(symbol, interval, range, includePrePost = false) {
     try {
         const url = `https://myproxy.uaena.io/api?type=stock&symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&range=${encodeURIComponent(range)}&includePrePost=${encodeURIComponent(includePrePost)}`;
-
         const res = await fetch(url);
         const data = await res.json();
         if (!data.chart || !data.chart.result || !data.chart.result[0]) return null;
@@ -233,8 +217,6 @@ async function fetchQuote(symbol, interval, range, includePrePost = false) {
     }
 }
 
-
-// Update all stock cards with latest prices
 async function updateStockPrices() {
     await Promise.all(
         STOCK_SYMBOLS.map(async ({ symbol }) => {
@@ -278,7 +260,7 @@ function getHighLow(candles) {
     candles.forEach(candle => {
         if (candle.high > high) high = candle.high;
         if (candle.low < low) low = candle.low;
-    })
+    });
 
     return { high, low };
 }
@@ -286,8 +268,6 @@ function getHighLow(candles) {
 function getCandles(data) {
     const q = data.indicators?.quote?.[0] || {};
     const ts = data.timestamp || [];
-    const intraday = interval.endsWith("m") || interval.endsWith("h");
-
     const O = q.open || [];
     const H = q.high || [];
     const L = q.low || [];
@@ -309,10 +289,9 @@ function getCandles(data) {
 
     if (!candles.length) {
         console.warn("no valid candle data for", currSymbol);
-        return false;
+        return [];
     }
 
-    // Convert date to numeric ms timestamp and ensure OHLC numbers exist
     const formatted = candles.map(d => ({
         date: (d.date instanceof Date) ? d.date.getTime() : Number(new Date(d.date).getTime()),
         open: Number(d.open),
@@ -323,10 +302,10 @@ function getCandles(data) {
 
     return formatted;
 }
+
 async function makeChart() {
     if (!currSymbol) return false;
 
-    // dispose previous root if exists
     if (root) {
         try { root.dispose(); } catch (e) { console.warn("error disposing root", e); }
         root = null;
@@ -337,29 +316,24 @@ async function makeChart() {
         console.warn("fetchQuote returned no data for", currSymbol);
         return false;
     }
-    const q = data.indicators?.quote?.[0] || {};
-    const ts = data.timestamp || [];
+
     const intraday = interval.endsWith("m") || interval.endsWith("h");
+    const formatted = getCandles(data);
 
-    formatted = getCandles(data);
-
-    /* top container init */
     const stock_name = document.getElementById("stock-name");
     const current_price = document.getElementById("current-price");
     const price_change = document.getElementById("price-change");
     const percent_change = document.getElementById("percent-change");
-    const day_high = document.getElementById("day-high");
-    const day_low = document.getElementById("day-low");
+    const day_high = document.getElementById("day-low");
+    const day_low = document.getElementById("day-high");
     const ai_support = document.getElementById("ai-support");
     const ai_resistance = document.getElementById("ai-resistance");
     const ai_target = document.getElementById("ai-target");
 
-    // reset AI fields
     ai_support.textContent = "Analyzing stock...";
     ai_resistance.textContent = "";
     ai_target.textContent = "";
 
-    // get prev close
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startMs = startOfToday.getTime();
@@ -398,8 +372,6 @@ async function makeChart() {
     day_high.textContent = `H: ${high.toFixed(2)}`;
     day_low.textContent = `L: ${low.toFixed(2)}`;
 
-    /* amCharts setup */
-
     root = am5.Root.new("stock-chart");
 
     root.setThemes([
@@ -416,8 +388,8 @@ async function makeChart() {
     root.numberFormatter.set("numberFormat", "#,###.00");
 
     var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
-        panX: true,           // allow horizontal pan
-        panY: true,           // allow vertical pan
+        panX: true,
+        panY: true,
         wheelY: "zoomX",
         height: am5.percent(100),
         pinchZoomX: true,
@@ -485,7 +457,7 @@ async function makeChart() {
 
     tooltip.label.setAll({
         fill: am5.color(0xffffff),
-    })
+    });
 
     valueSeries.set("tooltip", tooltip);
 
@@ -506,7 +478,6 @@ async function makeChart() {
         width: am5.percent(80)
     });
 
-
     valueSeries.data.setAll(formatted);
     stockChart.set("stockSeries", valueSeries);
 
@@ -516,20 +487,17 @@ async function makeChart() {
 
     let latestPriceRange;
     function updateLatestPriceLine(price) {
-        if (!valueAxis) return; // ensure valueAxis exists
-
-        // Remove old range if it exists
+        if (!valueAxis) return;
         if (latestPriceRange) valueAxis.axisRanges.removeValue(latestPriceRange);
 
-        // Create new axis range at current price
         latestPriceRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
             value: price
         }));
 
         latestPriceRange.get("grid").setAll({
-            stroke: am5.color(0xFFA500), // white line for current price
+            stroke: am5.color(0xFFA500),
             strokeWidth: 1,
-            strokeDasharray: [2, 2], // optional dashed line
+            strokeDasharray: [2, 2],
             strokeOpacity: 1
         });
 
@@ -548,7 +516,6 @@ async function makeChart() {
         yAxis: valueAxis,
     }));
 
-    /* technical indicators */
     let period = [
         [9, "rgba(227, 183, 255, 0.99)"],
         [21, "rgba(208, 155, 98, 1)"],
@@ -569,15 +536,9 @@ async function makeChart() {
         MA.series.strokes.template.setAll({
             strokeWidth: 1 + (p / 70),
             strokeLinejoin: "round",
-        })
+        });
         MA.series.set("groupData", groupData);
-    })
-
-    // const BB = stockChart.indicators.push(am5stock.BollingerBands.new(root, {
-    //     stockChart: stockChart,
-    //     stockSeries: valueSeries,
-    //     period: 30,
-    // }))
+    });
 
     const MACD = stockChart.indicators.push(am5stock.MACD.new(root, {
         stockChart: stockChart,
@@ -585,7 +546,7 @@ async function makeChart() {
         shortPeriod: 12,
         longPeriod: 26,
         signalPeriod: 9,
-    }))
+    }));
 
     let resistanceRange, supportRange;
 
@@ -595,11 +556,9 @@ async function makeChart() {
         const rVal = Number(estimateObj.resistance);
         const sVal = Number(estimateObj.support);
 
-        // Remove old ranges if they exist
         if (resistanceRange) valueAxis.axisRanges.removeValue(resistanceRange);
         if (supportRange) valueAxis.axisRanges.removeValue(supportRange);
 
-        // Resistance line
         resistanceRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
             value: rVal
         }));
@@ -615,7 +574,6 @@ async function makeChart() {
             fontWeight: "bold",
         });
 
-        // Support line
         supportRange = valueAxis.createAxisRange(valueAxis.makeDataItem({
             value: sVal
         }));
@@ -631,19 +589,15 @@ async function makeChart() {
             fontWeight: "bold",
         });
 
-        // update UI labels if present
         ai_resistance.textContent = "Resistance: " + estimateObj.resistance;
         ai_support.textContent = "Support: " + estimateObj.support;
         ai_target.textContent = "Target: " + estimateObj.target;
     }
 
-    // apply immediately if we already have estimates
     if (estimates[currSymbol]) {
         applyEstimatesToChart(estimates[currSymbol]);
     } else {
-        // indicate waiting status
         ai_support.textContent = "Analyzing stock...";
-        // register a one-time listener — will apply when notifyEstimateReady(symbol) runs
         const thisSymbol = currSymbol;
         const listener = (estimateObj) => {
             if (thisSymbol !== currSymbol) return;
@@ -653,8 +607,6 @@ async function makeChart() {
         onEstimateReady(currSymbol, listener);
     }
 
-    /* set colors of chart */
-    // axes - labels
     dateAxis.get("renderer").labels.template.setAll({
         fill: am5.color("#fff"),
         fontSize: 11
@@ -673,7 +625,6 @@ async function makeChart() {
         fontWeight: "bold"
     });
 
-    // axes - grid lines
     dateAxis.get("renderer").grid.template.setAll({
         stroke: am5.color("#fff"),
         strokeOpacity: 0.3
@@ -692,42 +643,38 @@ async function makeChart() {
         strokeOpacity: 0.2
     });
 
-    // cursor color
     cursor.lineX.setAll({
-        stroke: am5.color(0xffffff), // white
+        stroke: am5.color(0xffffff),
         strokeWidth: 1,
         strokeOpacity: 1,
         strokeDasharray: []
     });
     cursor.lineY.setAll({
-        stroke: am5.color(0xffffff), // white
+        stroke: am5.color(0xffffff),
         strokeWidth: 1,
         strokeOpacity: 1,
         strokeDasharray: []
     });
 
     MACD.panel.get("cursor").lineX.setAll({
-        stroke: am5.color(0xffffff), // white
+        stroke: am5.color(0xffffff),
         strokeWidth: 1,
         strokeOpacity: 1
     });
     MACD.panel.get("cursor").lineY.setAll({
-        stroke: am5.color(0xffffff), // white
+        stroke: am5.color(0xffffff),
         strokeWidth: 1,
         strokeOpacity: 1
     });
-    // indicator styles
 
     return true;
 }
 
-// helper: choose baseInterval from array of numeric ms timestamps
 function detectBaseIntervalFromDates(datesMs, intraday) {
     if (!datesMs || datesMs.length < 2) {
         return { baseInterval: { timeUnit: "day", count: 1 }, groupData: true };
     }
 
-    // compute deltas and median delta to be robust against outliers
     const deltas = [];
     for (let i = 1; i < datesMs.length; i++) {
         deltas.push(datesMs[i] - datesMs[i - 1]);
@@ -742,20 +689,16 @@ function detectBaseIntervalFromDates(datesMs, intraday) {
     const WEEK = 7 * DAY;
     const MONTH = 30 * DAY;
 
-    // prefer intraday granular units when intraday is true
     if (medianDelta < MINUTE) {
-        // sub-minute? treat as 1 minute
         return { baseInterval: { timeUnit: "minute", count: 1 }, groupData: false };
     }
     if (medianDelta < HOUR) {
-        // pick reasonable minute bucket (1,5,15,30,60)
         const mins = Math.round(medianDelta / MINUTE);
         const buckets = [1, 5, 15, 30, 60];
         const choice = buckets.reduce((best, b) => (Math.abs(b - mins) < Math.abs(best - mins) ? b : best), buckets[0]);
         return { baseInterval: { timeUnit: "minute", count: choice }, groupData: intraday ? false : true };
     }
     if (medianDelta < DAY) {
-        // pick hour bucket (1,2,3,4,6,12)
         const hrs = Math.round(medianDelta / HOUR);
         const buckets = [1, 2, 3, 4, 6, 12];
         const choice = buckets.reduce((best, b) => (Math.abs(b - hrs) < Math.abs(best - hrs) ? b : best), buckets[0]);
