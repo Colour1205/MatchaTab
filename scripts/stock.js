@@ -49,7 +49,7 @@ function isFreshCached(cachedObj) {
     if (!cachedObj || !cachedObj.ts) return false;
     const ageMs = Date.now() - cachedObj.ts;
     const ONE_DAY = 24 * 60 * 60 * 1000;
-    return ageMs < 60 * 1000;
+    return ageMs < ONE_DAY;
 }
 
 function notifyEstimateReady(symbol) {
