@@ -1013,3 +1013,171 @@ select option {
         min-height: 95px;
     }
 }
+
+/* Liquid glass mode (opt-in only) */
+body.liquid-glass-enabled {
+    --liquid-bg: rgba(255, 255, 255, 0.08);
+    --liquid-bg-hover: rgba(255, 255, 255, 0.15);
+    --liquid-bg-active: rgba(255, 255, 255, 0.12);
+    --liquid-border: 1px solid rgba(255, 255, 255, 0.2);
+    --liquid-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.24);
+    --liquid-inner-shadow: inset 5px 5px 8px -9px rgba(255, 255, 255, 0.7), inset -5px -5px 8px -9px rgba(255, 255, 255, 0.58);
+}
+
+body.liquid-glass-enabled .search-container,
+body.liquid-glass-enabled #toggle-ai,
+body.liquid-glass-enabled #send-button,
+body.liquid-glass-enabled .quick-link,
+body.liquid-glass-enabled .quick-link-context,
+body.liquid-glass-enabled .stock-card,
+body.liquid-glass-enabled .stock-container-inner.button,
+body.liquid-glass-enabled .button,
+body.liquid-glass-enabled .news-card,
+body.liquid-glass-enabled #wallpaper-button,
+body.liquid-glass-enabled select,
+body.liquid-glass-enabled .quick-link-expander,
+body.liquid-glass-enabled .stock.container,
+body.liquid-glass-enabled #settings-button,
+body.liquid-glass-enabled .settings-panel,
+body.liquid-glass-enabled #close-settings-button,
+body.liquid-glass-enabled #stock-background.show {
+    position: relative;
+    isolation: isolate;
+    background: transparent;
+    border: var(--liquid-border);
+    box-shadow: var(--liquid-shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    filter: none;
+    -webkit-filter: none;
+}
+
+body.liquid-glass-enabled .search-container::before,
+body.liquid-glass-enabled #toggle-ai::before,
+body.liquid-glass-enabled #send-button::before,
+body.liquid-glass-enabled .quick-link::before,
+body.liquid-glass-enabled .quick-link-expander::before,
+body.liquid-glass-enabled .quick-link-context::before,
+body.liquid-glass-enabled .stock-card::before,
+body.liquid-glass-enabled .stock.container::before,
+body.liquid-glass-enabled .stock-container-inner.button::before,
+body.liquid-glass-enabled .button::before,
+body.liquid-glass-enabled .close.button::before,
+body.liquid-glass-enabled .news-card::before,
+body.liquid-glass-enabled #settings-button::before,
+body.liquid-glass-enabled .settings-panel::before,
+body.liquid-glass-enabled #wallpaper-button::before,
+body.liquid-glass-enabled #close-settings-button::before,
+body.liquid-glass-enabled select::before,
+body.liquid-glass-enabled #stock-background.show::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: var(--liquid-inner-shadow);
+    background-color: var(--liquid-bg);
+    transition: background-color 0.18s ease;
+    pointer-events: none;
+}
+
+body.liquid-glass-enabled .search-container::after,
+body.liquid-glass-enabled #toggle-ai::after,
+body.liquid-glass-enabled #send-button::after,
+body.liquid-glass-enabled .quick-link::after,
+body.liquid-glass-enabled .quick-link-expander::after,
+body.liquid-glass-enabled .quick-link-context::after,
+body.liquid-glass-enabled .stock-card::after,
+body.liquid-glass-enabled .stock.container::after,
+body.liquid-glass-enabled .stock-container-inner.button::after,
+body.liquid-glass-enabled .button::after,
+body.liquid-glass-enabled .close.button::after,
+body.liquid-glass-enabled .news-card::after,
+body.liquid-glass-enabled #settings-button::after,
+body.liquid-glass-enabled .settings-panel::after,
+body.liquid-glass-enabled #wallpaper-button::after,
+body.liquid-glass-enabled #close-settings-button::after,
+body.liquid-glass-enabled select::after,
+body.liquid-glass-enabled #stock-background.show::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    border-radius: inherit;
+    backdrop-filter: blur(3px) saturate(135%) brightness(1.2);
+    -webkit-backdrop-filter: blur(3px) saturate(135%) brightness(1.2);
+    background: rgba(255, 255, 255, 0.026);
+    filter: url(#glass-distortion);
+    -webkit-filter: url(#glass-distortion);
+    pointer-events: none;
+}
+
+body.liquid-glass-enabled #send-button:hover::before,
+body.liquid-glass-enabled .quick-link:hover::before,
+body.liquid-glass-enabled .quick-link-context button:hover::before,
+body.liquid-glass-enabled .button:hover::before,
+body.liquid-glass-enabled .close.button:hover::before,
+body.liquid-glass-enabled .news-card:hover::before,
+body.liquid-glass-enabled #settings-button:hover::before,
+body.liquid-glass-enabled #wallpaper-button:hover::before,
+body.liquid-glass-enabled #close-settings-button:hover::before,
+body.liquid-glass-enabled select:hover::before {
+    background-color: var(--liquid-bg-hover);
+}
+
+body.liquid-glass-enabled .button:active::before,
+body.liquid-glass-enabled .close.button:active::before,
+body.liquid-glass-enabled #wallpaper-button:active::before,
+body.liquid-glass-enabled #close-settings-button:active::before,
+body.liquid-glass-enabled .stock-container-inner.button.active::before {
+    background-color: var(--liquid-bg-active);
+}
+
+body.liquid-glass-enabled #settings-button {
+    position: fixed;
+}
+
+body.liquid-glass-enabled #close-settings-button {
+    position: absolute;
+}
+
+body.liquid-glass-enabled .stock.container,
+body.liquid-glass-enabled .quick-link-expander {
+    position: fixed;
+}
+
+body.liquid-glass-enabled #stock-close-button.close.button {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    z-index: 3;
+}
+
+body.liquid-glass-enabled #stock-background.show {
+    position: absolute;
+}
+
+/* Keep stock chart readable even in liquid mode: blur only, no distortion/brightness layer */
+body.liquid-glass-enabled .stock.container::before,
+body.liquid-glass-enabled .stock.container::after,
+body.liquid-glass-enabled #stock-background.show::before,
+body.liquid-glass-enabled #stock-background.show::after {
+    content: none;
+}
+
+body.liquid-glass-enabled .stock.container {
+    backdrop-filter: blur(7px) !important;
+    -webkit-backdrop-filter: blur(7px) !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+body.liquid-glass-enabled #toggle-ai.active {
+    background: linear-gradient(135deg,
+            rgba(180, 100, 220, 0.5),
+            rgba(100, 120, 255, 0.5),
+            rgba(255, 120, 120, 0.5));
+    box-shadow: 0 0 20px rgba(125, 140, 255, 0.5);
+    transform: scale(1.2);
+    color: white;
+}

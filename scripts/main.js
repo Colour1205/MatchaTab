@@ -546,6 +546,8 @@ setInterval(loadNews, NEWS_CACHE_TIME);
 const BLUR_KEY = 'userBgBlurV1';
 const blurSlider = document.getElementById('blur-slider');
 const blurValueLabel = document.getElementById('blur-value');
+const LIQUID_GLASS_KEY = 'liquidGlassEnabledV1';
+const liquidGlassToggle = document.getElementById('liquid-glass-toggle');
 
 function setBackgroundBlur(px) {
     const bgElem = document.querySelector('.background');
@@ -568,6 +570,23 @@ if (blurSlider) {
 
         setBackgroundBlur(val);
         localStorage.setItem(BLUR_KEY, val);
+    });
+}
+
+function applyLiquidGlassEnabled(enabled) {
+    document.body.classList.toggle('liquid-glass-enabled', enabled);
+}
+
+let liquidGlassEnabled = localStorage.getItem(LIQUID_GLASS_KEY);
+liquidGlassEnabled = liquidGlassEnabled === null ? false : liquidGlassEnabled === 'true';
+applyLiquidGlassEnabled(liquidGlassEnabled);
+
+if (liquidGlassToggle) {
+    liquidGlassToggle.checked = liquidGlassEnabled;
+    liquidGlassToggle.addEventListener('change', function () {
+        const enabled = this.checked;
+        applyLiquidGlassEnabled(enabled);
+        localStorage.setItem(LIQUID_GLASS_KEY, String(enabled));
     });
 }
 

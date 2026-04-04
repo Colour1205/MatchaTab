@@ -26,6 +26,18 @@
 </head>
 
 <body>
+    <!-- Liquid Glass SVG Filter -->
+    <svg width="0" height="0" style="position: absolute;" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.010 0.010" numOctaves="2" seed="92" result="noise" />
+                <feGaussianBlur in="noise" stdDeviation="1" result="blurred" />
+                <feDisplacementMap in="SourceGraphic" in2="blurred" scale="95" xChannelSelector="R"
+                    yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
+
     <div class="background-wrapper">
         <div class="background-overlay"></div>
         <div class="background"></div>
@@ -106,6 +118,10 @@
                     <option value="https://www.bing.com/search?q=" class="option">Bing</option>
                     <option value="https://www.google.com/search?q=" class="option">Google</option>
                 </select>
+            </div>
+            <div class="settings-row">
+                <label for="liquid-glass-toggle">Liquid Glass</label>
+                <input type="checkbox" id="liquid-glass-toggle">
             </div>
         </div>
     </div>
