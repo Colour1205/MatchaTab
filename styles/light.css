@@ -1,16 +1,18 @@
 :root {
-    --backdrop-filter: blur(3px) contrast(1.2) saturate(1.2) brightness(1.1);
-    --backdrop-color: rgba(255, 255, 255, 0.4);
-    --border-glass: border: 1px solid rgba(255, 255, 255, 0.2);
-    --backdrop-filter-hover: blur(3px) contrast(1) saturate(1.2) brightness(1.4);
-    --transition-expand: all 315ms cubic-bezier(0.20, 0.80, 0.20, 1);
+    --backdrop-filter: blur(20px) saturate(200%) brightness(1.05);
+    --backdrop-filter-hover: blur(26px) saturate(240%) brightness(1.12);
+    --backdrop-color: rgba(255, 255, 255, 0.15);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.55);
+    --glass-shine: inset 2px 2px 1px rgba(255, 255, 255, 0.75), inset -1px -1px 1px rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    --glass-filter: url(#glass-distortion);
+    --transition-expand: all 315ms cubic-bezier(0.175, 0.885, 0.32, 2.2);
 }
 
 html,
 body {
     margin: 0;
     padding: 0;
-    ;
     height: 100%;
     font-family: 'Segoe UI', sans-serif;
     display: flex;
@@ -89,7 +91,6 @@ body {
     color: rgba(255, 255, 255, 1);
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.3);
     z-index: 1;
-
 }
 
 #ai-chat {
@@ -111,14 +112,16 @@ body {
     justify-content: center;
     align-items: center;
     border-radius: 22px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
     background: var(--backdrop-color);
     overflow: hidden;
     width: 100%;
     flex-wrap: wrap;
     height: 60px;
     backdrop-filter: var(--backdrop-filter);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--glass-border);
+    filter: var(--glass-filter);
 }
 
 .search-container.expand {
@@ -164,15 +167,19 @@ body {
     padding-top: 7px;
     padding-bottom: 7px;
     margin-right: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: var(--backdrop-color);
+    border: var(--glass-border);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 13px;
     color: #444;
     font-weight: 600;
     cursor: pointer;
-    transition-property: box-shadow, transform;
-    transition-duration: 0.3s;
-    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
+    box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.8), inset -1px -1px 0 rgba(255, 255, 255, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+    transition-property: box-shadow, transform, background;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
 }
 
 #send-button {
@@ -180,29 +187,33 @@ body {
     display: flex;
     padding: 14px;
     border: none;
-    background: var(--backdrop-color);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     cursor: pointer;
     flex-shrink: 0;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    transition-property: transform, box-shadow;
-    transition-duration: 0.3s;
-    transition-timing-function: cubic-bezier(.39, 1.74, .4, .79);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    transition-property: transform, box-shadow, background;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 2.2);
     backdrop-filter: var(--backdrop-filter);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--glass-border);
+    filter: var(--glass-filter);
 }
 
 #send-button:hover {
-    transform: scale(1.05);
-    background: #ffffffb7;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transform: scale(1.08);
+    background: rgba(255, 255, 255, 0.32);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.4);
 }
 
 #send-button:active {
     transform: translateY(0) scale(0.95);
-    box-shadow: 0 0 7px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 0 rgba(255, 255, 255, 0.2);
 }
 
 #send-button svg {
@@ -212,8 +223,9 @@ body {
 }
 
 #toggle-ai.active {
-    background: linear-gradient(135deg, #e286fc77, #5451f766, hsla(0, 100%, 73%, 0.479));
-    box-shadow: 0 0 20px rgba(164, 144, 255, 0.795);
+    background: linear-gradient(135deg, rgba(226, 134, 252, 0.5), rgba(84, 81, 247, 0.4), rgba(255, 118, 118, 0.4));
+    box-shadow: 0 0 20px rgba(164, 144, 255, 0.6),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.7), inset -1px -1px 1px rgba(255, 255, 255, 0.3);
     transform: scale(1.2);
     color: white;
 }
@@ -263,19 +275,23 @@ body {
     border-radius: 16px;
     cursor: pointer;
     background: var(--backdrop-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
     position: relative;
     user-select: none;
     backdrop-filter: var(--backdrop-filter);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--glass-border);
+    filter: var(--glass-filter);
 }
 
 .quick-link:hover {
-    background: rgba(255, 255, 255, 0.538);
+    background: rgba(255, 255, 255, 0.28);
     backdrop-filter: var(--backdrop-filter-hover);
-    box-shadow: 0 5px 20px rgba(85, 76, 186, 0.2);
-    transform: translateY(-2px);
+    -webkit-backdrop-filter: var(--backdrop-filter-hover);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.5);
+    transform: translateY(-3px) scale(1.02);
 }
 
 /* Center the content inside the fullscreening expander */
@@ -285,9 +301,11 @@ body {
     border-radius: 16px;
     background: var(--backdrop-color);
     backdrop-filter: var(--backdrop-filter);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), var(--glass-shine);
     overflow: hidden;
     transition: var(--transition-expand);
+    border: var(--glass-border);
 }
 
 /* When expanding, center children */
@@ -297,14 +315,12 @@ body {
     justify-content: center;
 }
 
-/* Keep a tidy inner block so icon+label don’t stretch edge-to-edge */
+/* Keep a tidy inner block so icon+label don't stretch edge-to-edge */
 .quick-link-expander .quick-link-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
-
-    /* allow a subtle scale up while expanding */
     transform: scale(1);
     transition: var(--transition-expand)
 }
@@ -353,15 +369,16 @@ body {
 }
 
 .quick-link-context {
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.4);
     backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
     border-radius: 17px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
     display: none;
     flex-direction: column;
     padding: 0;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: var(--glass-border);
 }
 
 .quick-link-context.show {
@@ -384,7 +401,7 @@ body {
 }
 
 .quick-link-context button:hover {
-    background: #dfddff;
+    background: rgba(255, 255, 255, 0.45);
 }
 
 /* stock section */
@@ -428,8 +445,11 @@ body {
     min-width: 155px;
     width: 155px;
     max-width: 155px;
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    border: var(--glass-border);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    filter: var(--glass-filter);
 }
 
 .stock-ticker {
@@ -456,8 +476,9 @@ body {
     flex-direction: column;
     z-index: 0;
     opacity: 0;
-    background: rgba(2, 3, 7, 0.923);
-    backdrop-filter: blur(7px);
+    background: rgba(2, 3, 7, 0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border-radius: 25px;
     padding-top: 20px;
     padding-bottom: 20px;
@@ -465,7 +486,9 @@ body {
     padding-left: 5px;
     overflow: hidden;
     color: white;
-    border: 3px solid rgb(204, 204, 255);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.12), inset -1px -1px 0 rgba(255, 255, 255, 0.05);
 }
 
 #stock-chart {
@@ -495,7 +518,7 @@ body {
 }
 
 .stock-container-inner.button {
-    background: rgba(117, 117, 117, 0.226);
+    background: rgba(255, 255, 255, 0.08);
     width: 50px;
     min-width: 50px;
     height: 50px;
@@ -504,15 +527,17 @@ body {
     justify-content: center;
     margin: 5px;
     border-radius: 15px;
-    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.15);
     color: white;
 }
 
 .stock-container-inner.button.active {
-    background: rgba(204, 204, 255, 0.77);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    background: rgba(204, 204, 255, 0.25);
+    box-shadow: 0 0 12px rgba(150, 150, 255, 0.3),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.3);
     transform: scale(1.1);
-    color: black;
+    color: white;
 }
 
 #stock-background {
@@ -533,23 +558,27 @@ body {
 .button {
     border: none;
     cursor: pointer;
-    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    border: var(--glass-border);
     backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    background: var(--backdrop-color);
 }
 
 .button:hover {
-    background: rgba(255, 255, 255, 0.527);
+    background: rgba(255, 255, 255, 0.3);
     backdrop-filter: var(--backdrop-filter-hover);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    -webkit-backdrop-filter: var(--backdrop-filter-hover);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.5);
     transform: scale(1.05);
 }
 
 .button:active {
-    transform: scale(0.99);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
-    backdrop-filter: var(--backdrop-filter-hover)
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .close.button {
@@ -558,21 +587,25 @@ body {
     top: 15px;
     width: 35px;
     height: 35px;
-    background: rgba(117, 117, 117, 0.226);
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.3), inset -1px -1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .close.button:hover {
-    background: rgba(204, 204, 255, 0.77);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.5), inset -1px -1px 1px rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
 }
 
 .close.button:active {
-    transform: scale(0.99);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 #stock-chart-container {
@@ -633,17 +666,20 @@ body {
     padding: 12px 16px;
     background: var(--backdrop-color);
     border-radius: 16px;
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.15);
-    transition: all 0.2s ease;
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
     margin-bottom: 4px;
     backdrop-filter: var(--backdrop-filter);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--glass-border);
+    filter: var(--glass-filter);
 }
 
 .news-card:hover {
-    box-shadow: 0 5px 20px rgba(85, 76, 186, 0.2);
-    background: rgba(255, 255, 255, 0.5);
-    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.08),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-3px);
 }
 
 .news-title {
@@ -683,13 +719,22 @@ body {
     right: 20px;
     width: 35px;
     height: 35px;
-    background: var(--backdrop-color);
+    background: rgba(255, 255, 255, 0.2);
     backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
     border-radius: 14px;
-    border: none;
+    border: var(--glass-border);
     cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: var(--glass-shadow), var(--glass-shine);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    filter: var(--glass-filter);
+}
+
+#settings-button:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.5);
 }
 
 /* settings panel */
@@ -714,7 +759,7 @@ body {
 #settings-container.show {
     opacity: 1;
     pointer-events: auto;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(8px) saturate(150%);
     transition:
         opacity 0s cubic-bezier(0, .98, .49, 1) 0s,
         backdrop-filter 0.9s cubic-bezier(0, .98, .49, 1) 0s;
@@ -741,10 +786,11 @@ body {
     margin-right: 5vw;
     max-width: 320px;
     min-width: 70px;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 35px;
     padding: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.8), inset -1px -1px 1px rgba(255, 255, 255, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -756,7 +802,8 @@ body {
     overflow-x: hidden;
     scrollbar-width: none;
     backdrop-filter: var(--backdrop-filter);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    border: var(--glass-border);
 }
 
 .settings-panel::-webkit-scrollbar {
@@ -769,24 +816,29 @@ body {
 
 #wallpaper-button {
     padding: 20px;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(209, 209, 254, 0.3);
     border-radius: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    background: rgba(209, 209, 254, 0.77);
-    box-shadow: 0 0 8px rgba(96, 96, 169, 0.175);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    box-shadow: 0 4px 16px rgba(96, 96, 169, 0.12),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.7), inset -1px -1px 1px rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
     margin-bottom: 10px;
 }
 
 #wallpaper-button:hover {
-    background: rgba(190, 190, 254, 0.77);
-    box-shadow: 0 0 10px rgba(96, 96, 169, 0.275);
+    background: rgba(190, 190, 254, 0.4);
+    box-shadow: 0 8px 28px rgba(96, 96, 169, 0.2),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.85), inset -1px -1px 1px rgba(255, 255, 255, 0.4);
     transform: scale(1.05);
 }
 
 #wallpaper-button:active {
-    transform: scale(0.99);
-    box-shadow: 0 0 15px rgba(96, 96, 169, 0.575);
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(96, 96, 169, 0.2),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 #close-settings-button {
@@ -795,22 +847,26 @@ body {
     top: 15px;
     width: 40px;
     height: 40px;
-    background: rgba(255, 255, 255, 0.634);
+    background: rgba(255, 255, 255, 0.25);
     cursor: pointer;
     border-radius: 50%;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.8), inset -1px -1px 1px rgba(255, 255, 255, 0.3);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 2.2);
+    border: var(--glass-border);
 }
 
 #close-settings-button:hover {
-    background: rgba(204, 204, 255, 0.77);
-    box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12),
+                inset 2px 2px 1px rgba(255, 255, 255, 0.9), inset -1px -1px 1px rgba(255, 255, 255, 0.5);
     transform: scale(1.1);
 }
 
 #close-settings-button:active {
-    transform: scale(0.99);
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.236);
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15),
+                inset 1px 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 #close-settings-button svg {
@@ -830,10 +886,12 @@ body {
 
 select {
     width: 150px;
-    background: rgba(126, 126, 126, 0.281);
+    background: rgba(255, 255, 255, 0.3);
     padding: 10px;
     border-radius: 15px;
-    border: none;
+    border: var(--glass-border);
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
 }
 
 /* responsive styles */
